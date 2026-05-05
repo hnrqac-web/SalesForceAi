@@ -5,7 +5,10 @@ import { useAuditorias } from '@/hooks/useAuditorias'
 import { AuditDetailSheet } from '@/components/AuditDetailSheet'
 import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, getInitials } from '@/lib/utils'
-import { Search, Calendar, User, Loader2, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react'
+import { Search, Calendar, User, Loader2, ChevronLeft, ChevronRight, Filter, X, ChevronUp, ChevronDown } from 'lucide-react'
+
+type SortKey = 'created_at' | 'ai_score' | 'vendedor_name' | 'cliente_name' | 'lead_sentiment'
+type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE = 15
 
@@ -17,11 +20,19 @@ export default function AuditoriasPage() {
   const [filterCliente, setFilterCliente] = useState('')
   const [filterScore, setFilterScore] = useState<'all' | 'alta' | 'atencao' | 'critico'>('all')
   const [page, setPage] = useState(1)
+  const [sortKey, setSortKey] = useState<SortKey>('created_at')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('desc') }
+    setPage(1)
+  }
 
   const vendedores = useMemo(() => [...new Set(data.map((a) => a.vendedor_name))].filter(Boolean), [data])
 
   const filtered = useMemo(() => {
-    return data.filter((a) => {
+    const f = data.filter((a) => {
       if (filterVendedor && a.vendedor_name !== filterVendedor) return false
       if (filterData && !a.created_at.startsWith(filterData)) return false
       if (filterCliente && !(a.cliente_name || '').toLowerCase().includes(filterCliente.toLowerCase())) return false
@@ -30,7 +41,13 @@ export default function AuditoriasPage() {
       if (filterScore === 'critico' && a.ai_score >= 6) return false
       return true
     })
-  }, [data, filterVendedor, filterData, filterCliente, filterScore])
+    return [...f].sort((a, b) => {
+      const av = a[sortKey] ?? ''
+      const bv = b[sortKey] ?? ''
+      const cmp = typeof av === 'number' ? av - (bv as number) : String(av).localeCompare(String(bv))
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [data, filterVendedor, filterData, filterCliente, filterScore, sortKey, sortDir])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -147,13 +164,30 @@ export default function AuditoriasPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-950/50 border-b border-slate-800">
-                  <th className="px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold">Cliente</th>
-                  <th className="px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold">Vendedor</th>
-                  <th className="px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold">Data</th>
-                  <th className="px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold">Status IA</th>
-                  <th className="px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold">Sentimento</th>
-                  <th className="px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold">Score</th>
-                  <th className="px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold"></th>
+                  {([
+                    ['cliente_name', 'Cliente'],
+                    ['vendedor_name', 'Vendedor'],
+                    ['created_at', 'Data'],
+                    [null, 'Status IA'],
+                    ['lead_sentiment', 'Sentimento'],
+                    ['ai_score', 'Score'],
+                    [null, ''],
+                  ] as [SortKey | null, string][]).map(([key, label]) => (
+                    <th key={label} className="px-4 sm:px-6 py-4 text-[10px] text-slate-500 uppercase tracking-widest font-bold whitespace-nowrap">
+                      {key ? (
+                        <button
+                          onClick={() => handleSort(key)}
+                          className="flex items-center gap-1 hover:text-slate-300 transition-colors group"
+                        >
+                          {label}
+                          <span className="flex flex-col gap-px ml-0.5">
+                            <ChevronUp size={8} className={sortKey === key && sortDir === 'asc' ? 'text-blue-400' : 'text-slate-700 group-hover:text-slate-500'} />
+                            <ChevronDown size={8} className={sortKey === key && sortDir === 'desc' ? 'text-blue-400' : 'text-slate-700 group-hover:text-slate-500'} />
+                          </span>
+                        </button>
+                      ) : label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">

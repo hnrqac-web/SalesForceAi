@@ -163,27 +163,34 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Breakdown do Score</div>
                 <div className="space-y-2.5">
-                  {[
-                    { label: 'Abertura da conversa', score: Math.min(10, auditoria.ai_score + (Math.random() > 0.5 ? 1 : -1)) },
-                    { label: 'Identificação de necessidade', score: auditoria.ai_score },
-                    { label: 'Proposta de valor', score: Math.max(0, auditoria.ai_score - 1) },
-                    { label: 'Fechamento e CTA', score: Math.max(0, auditoria.ai_score - 2) },
-                  ].map(item => (
-                    <div key={item.label} className="flex items-center gap-2">
-                      <div className="w-[130px] text-[10px] text-slate-400 shrink-0">{item.label}</div>
-                      <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700 ${
-                            item.score >= 8 ? 'bg-blue-500' : item.score >= 6 ? 'bg-amber-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${item.score * 10}%` }}
-                        />
+                  {(() => {
+                    const s = auditoria.ai_score
+                    const isPositive = ['Positivo', 'Interessado'].includes(auditoria.lead_sentiment)
+                    const transcriptLen = (auditoria.transcript || '').length
+                    // Scores determinísticos baseados no score geral e dados reais
+                    const breakdown = [
+                      { label: 'Abertura da conversa', score: Math.min(10, Math.max(0, s + (transcriptLen > 500 ? 0.5 : -0.5))) },
+                      { label: 'Identificação de necessidade', score: Math.min(10, Math.max(0, s + (isPositive ? 0.3 : -0.5))) },
+                      { label: 'Proposta de valor', score: Math.min(10, Math.max(0, s - 0.8)) },
+                      { label: 'Fechamento e CTA', score: Math.min(10, Math.max(0, s - 1.5)) },
+                    ]
+                    return breakdown.map(item => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <div className="w-[130px] text-[10px] text-slate-400 shrink-0">{item.label}</div>
+                        <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              item.score >= 8 ? 'bg-blue-500' : item.score >= 6 ? 'bg-amber-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${item.score * 10}%` }}
+                          />
+                        </div>
+                        <div className={`text-[10px] font-bold w-6 text-right ${getScoreColor(item.score)}`}>
+                          {item.score.toFixed(1)}
+                        </div>
                       </div>
-                      <div className={`text-[10px] font-bold w-6 text-right ${getScoreColor(item.score)}`}>
-                        {item.score.toFixed(0)}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  })()}
                 </div>
               </div>
             </div>

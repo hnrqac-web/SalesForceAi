@@ -5,9 +5,10 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuditorias } from '@/hooks/useAuditorias'
+import { SearchModal } from '@/components/SearchModal'
 import {
   LayoutDashboard, FileSearch, MessageCircle,
-  Settings, Activity, LogOut, AlertTriangle, BarChart2, Menu, X,
+  Settings, Activity, LogOut, AlertTriangle, BarChart2, Menu, X, Search,
 } from 'lucide-react'
 
 export function Sidebar() {
@@ -15,6 +16,7 @@ export function Sidebar() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const { data } = useAuditorias()
 
   const criticalCount = data.filter(
@@ -23,6 +25,18 @@ export function Sidebar() {
 
   // Fecha drawer ao trocar de rota
   useEffect(() => { setIsOpen(false) }, [pathname])
+
+  // Atalho global Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   // Trava scroll do body quando drawer está aberto
   useEffect(() => {
@@ -121,6 +135,18 @@ export function Sidebar() {
           })}
         </nav>
 
+        {/* Busca */}
+        <div className="px-2 pb-2">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-500 hover:text-slate-300 hover:border-slate-600 transition-all group"
+          >
+            <Search size={13} />
+            <span className="flex-1 text-xs text-left">Buscar...</span>
+            <kbd className="hidden lg:flex items-center gap-0.5 text-[9px] font-mono bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5">⌘K</kbd>
+          </button>
+        </div>
+
         {/* User */}
         <div className="p-2 border-t border-slate-800">
           <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/50 border border-slate-800/50">
@@ -165,6 +191,12 @@ export function Sidebar() {
             </span>
           )}
           <button
+            onClick={() => setSearchOpen(true)}
+            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <Search size={17} />
+          </button>
+          <button
             onClick={() => setIsOpen(true)}
             className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
           >
@@ -192,6 +224,9 @@ export function Sidebar() {
           </aside>
         </div>
       )}
+
+      {/* ── Global Search Modal ── */}
+      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   )
 }
