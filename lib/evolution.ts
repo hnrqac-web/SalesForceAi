@@ -96,15 +96,17 @@ export const evolutionService = {
           endpoint: `/webhook/set/${instanceName}`,
           method: 'POST',
           body: {
-            enabled: true,
-            url: url,
-            webhook_by_events: false,
-            events: [
-              'MESSAGES_UPSERT',
-              'MESSAGES_UPDATE',
-              'SEND_MESSAGE',
-              'CONNECTION_UPDATE'
-            ]
+            webhook: {
+              enabled: true,
+              url: url,
+              webhook_by_events: false,
+              events: [
+                'MESSAGES_UPSERT',
+                'MESSAGES_UPDATE',
+                'SEND_MESSAGE',
+                'CONNECTION_UPDATE'
+              ]
+            }
           },
         }),
       });
