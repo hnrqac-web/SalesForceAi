@@ -86,32 +86,38 @@ export const evolutionService = {
    */
   async setWebhook(instanceName: string, url: string) {
     try {
-      console.log(`Configurando Webhook para ${instanceName} com URL: ${url}`);
+      console.log(`[FRONTEND] Configurando Webhook para ${instanceName}`);
       const response = await fetch('/api/evolution', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          endpoint: `/instance/setWebhook/${instanceName}`,
+          endpoint: `/webhook/set/${instanceName}`,
           method: 'POST',
           body: {
-            url: url,
             enabled: true,
+            url: url,
+            webhook_by_events: false,
             events: [
               'MESSAGES_UPSERT',
               'MESSAGES_UPDATE',
-              'SEND_MESSAGE'
+              'SEND_MESSAGE',
+              'CONNECTION_UPDATE'
             ]
           },
         }),
       });
+      
       const data = await response.json();
-      console.log('Resposta do Webhook:', data);
-      if (!response.ok) throw data;
+      console.log('[FRONTEND] Resposta da API:', data);
+      
+      if (!response.ok) {
+        throw data;
+      }
       return data;
-    } catch (error) {
-      console.error('Erro ao configurar webhook:', error);
+    } catch (error: any) {
+      console.error('[FRONTEND] Erro Fatal:', error);
       throw error;
     }
   }
