@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
   try {
     const { endpoint, method, body } = await request.json();
     
-    // Pegamos as variáveis dentro do handler para garantir que pegam o valor atualizado
     const rawUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL;
     const apiKey = process.env.EVOLUTION_API_KEY;
 
@@ -16,7 +15,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Configurações da Evolution API (URL ou API_KEY) ausentes na Vercel.' }, { status: 500 });
     }
 
-    // Normaliza a URL para evitar barras duplas
     const baseUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const fullUrl = `${baseUrl}${cleanEndpoint}`;
@@ -32,7 +30,18 @@ export async function POST(request: NextRequest) {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await response.json();
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
+      }
+    }
 
     if (!response.ok) {
       console.error('[Evolution Proxy] Erro da API Externa:', data);
@@ -50,7 +59,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Implementar GET e DELETE seguindo a mesma lógica de normalização
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const endpoint = searchParams.get('endpoint');
@@ -68,7 +76,15 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
     });
-    const data = await response.json();
+    
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = { message: await response.text() };
+    }
+
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
