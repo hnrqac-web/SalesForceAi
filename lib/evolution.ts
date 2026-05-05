@@ -79,5 +79,35 @@ export const evolutionService = {
     } catch (error) {
       console.error('Erro ao deletar instância:', error);
     }
+  },
+
+  /**
+   * Configura o Webhook para uma instância
+   */
+  async setWebhook(instanceName: string, url: string) {
+    try {
+      const response = await fetch('/api/evolution', {
+        method: 'POST',
+        body: JSON.stringify({
+          endpoint: `/webhook/set/${instanceName}`,
+          method: 'POST',
+          body: {
+            url: url,
+            enabled: true,
+            events: [
+              'MESSAGES_UPSERT',
+              'MESSAGES_UPDATE',
+              'SEND_MESSAGE'
+            ]
+          },
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
+    } catch (error) {
+      console.error('Erro ao configurar webhook:', error);
+      throw error;
+    }
   }
 };
