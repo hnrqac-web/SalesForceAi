@@ -37,6 +37,7 @@ export const evolutionService = {
           body: {
             instanceName,
             token: '',
+            integration: 'WHATSAPP-BAILEYS',
             qrcode: true,
           },
         }),
