@@ -69,16 +69,29 @@ export default function WhatsAppSetupPage() {
   }
 
   const handleSaveWebhook = async () => {
-    if (!webhookUrl) return
-    setSavingWebhook(true)
+    if (!webhookUrl) {
+      alert('Por favor, cole a URL do Webhook do n8n primeiro.');
+      return;
+    }
+    
+    const name = selectedInstance.instanceName || selectedInstance.name || selectedInstance.instance?.instanceName;
+    console.log('Tentando salvar Webhook para:', name);
+    
+    if (!name) {
+      alert('Erro: Nome da instância não encontrado.');
+      return;
+    }
+
+    setSavingWebhook(true);
     try {
-      const name = selectedInstance.instanceName || selectedInstance.name
-      await evolutionService.setWebhook(name, webhookUrl)
-      alert('Webhook configurado com sucesso! Agora o n8n receberá suas mensagens.')
+      const result = await evolutionService.setWebhook(name, webhookUrl);
+      console.log('Resultado do salvamento:', result);
+      alert('✅ Webhook configurado com sucesso! O n8n já pode receber suas mensagens.');
     } catch (err: any) {
-      alert('Erro ao configurar webhook: ' + (err.message || 'Erro desconhecido'))
+      console.error('Erro ao salvar webhook:', err);
+      alert('❌ Erro ao configurar: ' + (err.details?.message || err.message || 'Erro desconhecido'));
     } finally {
-      setSavingWebhook(false)
+      setSavingWebhook(false);
     }
   }
 
