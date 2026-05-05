@@ -1,29 +1,77 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
 
-  // Se o usuário não estiver logado e tentar acessar uma rota protegida (dentro do grupo (app))
-  if (!session && (req.nextUrl.pathname.startsWith('/dashboard') || 
-                   req.nextUrl.pathname.startsWith('/auditorias') ||
-                   req.nextUrl.pathname.startsWith('/settings') ||
-                   req.nextUrl.pathname.startsWith('/whatsapp-setup'))) {
-    return NextResponse.redirect(new URL('/login', req.url))
+  const { data: { session } } = await supabase.auth.getSession()
+
+  const { pathname } = request.nextUrl
+
+  // Proteção de rotas internas
+  const protectedRoutes = ['/dashboard', '/auditorias', '/settings', '/whatsapp-setup']
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+
+  if (!session && isProtectedRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Se o usuário estiver logado e tentar acessar o login
-  if (session && req.nextUrl.pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+  // Redirecionar se já estiver logado
+  if (session && pathname === '/login') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  return res
+  return response
 }
 
 export const config = {
