@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { useAuditorias } from '@/hooks/useAuditorias'
 import { getAverageScore, getScoreColor, getSentimentColor, getInitials, formatDate } from '@/lib/utils'
 import { Auditoria } from '@/types/auditoria'
@@ -10,7 +11,7 @@ import {
 } from 'recharts'
 import {
   Download, Filter, TrendingUp, TrendingDown,
-  Award, Users, BarChart2, Loader2, ChevronLeft, ChevronRight
+  Award, Users, BarChart2, Loader2, ChevronLeft, ChevronRight, ExternalLink
 } from 'lucide-react'
 
 type Period = '7d' | '30d' | '90d' | 'all'
@@ -298,7 +299,11 @@ export default function RelatoriosPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {vendedorStats.map((v, i) => (
-              <div key={v.fullName} className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 flex items-center gap-3">
+              <Link
+                key={v.fullName}
+                href={`/relatorios/${encodeURIComponent(v.fullName)}`}
+                className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 flex items-center gap-3 hover:border-blue-500/30 hover:bg-slate-800 transition-all group"
+              >
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0 ${
                   i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-slate-400' : i === 2 ? 'bg-amber-700' : 'bg-slate-700'
                 }`}>
@@ -308,7 +313,10 @@ export default function RelatoriosPage() {
                   {getInitials(v.fullName)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-200 truncate">{v.fullName}</div>
+                  <div className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors truncate flex items-center gap-1">
+                    {v.fullName}
+                    <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                   <div className="text-[10px] text-slate-500">{v.total} auditorias · {v.positivos} positivos</div>
                   <div className="mt-1.5 h-1 bg-slate-700 rounded-full overflow-hidden">
                     <div
@@ -322,7 +330,7 @@ export default function RelatoriosPage() {
                 <div className={`text-sm font-black flex-shrink-0 ${getScoreColor(v.score)}`}>
                   {v.score.toFixed(1)}
                 </div>
-              </div>
+              </Link>
             ))}
             {vendedorStats.length === 0 && (
               <div className="col-span-3 py-8 text-center text-xs text-slate-500">
