@@ -86,10 +86,14 @@ export const evolutionService = {
    */
   async setWebhook(instanceName: string, url: string) {
     try {
+      console.log(`Configurando Webhook para ${instanceName} com URL: ${url}`);
       const response = await fetch('/api/evolution', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          endpoint: `/webhook/set/${instanceName}`,
+          endpoint: `/instance/setWebhook/${instanceName}`,
           method: 'POST',
           body: {
             url: url,
@@ -103,6 +107,7 @@ export const evolutionService = {
         }),
       });
       const data = await response.json();
+      console.log('Resposta do Webhook:', data);
       if (!response.ok) throw data;
       return data;
     } catch (error) {
