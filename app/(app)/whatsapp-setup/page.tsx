@@ -70,29 +70,31 @@ export default function WhatsAppSetupPage() {
   }
 
   const handleSaveWebhook = async () => {
+    console.log('--- BOTÃO CLICADO ---');
     setWebhookStatus(null);
     
     if (!webhookUrl) {
+      console.log('Erro: URL vazia');
       setWebhookStatus({ type: 'error', message: 'Por favor, cole a URL do n8n.' });
       return;
     }
     
-    const name = selectedInstance.instanceName || selectedInstance.name || selectedInstance.instance?.instanceName;
-    if (!name) {
-      setWebhookStatus({ type: 'error', message: 'Erro interno: Nome da instância não encontrado.' });
+    const instanceName = selectedInstance?.name || selectedInstance?.instanceName || (selectedInstance?.instance && selectedInstance.instance.instanceName);
+    console.log('Instância alvo:', instanceName);
+
+    if (!instanceName) {
+      setWebhookStatus({ type: 'error', message: 'ID da instância não encontrado.' });
       return;
     }
 
     setSavingWebhook(true);
     try {
-      console.log('Iniciando salvamento de webhook para:', name);
-      await evolutionService.setWebhook(name, webhookUrl);
-      setWebhookStatus({ type: 'success', message: 'Webhook configurado com sucesso!' });
-      // Limpa a mensagem após 5 segundos
-      setTimeout(() => setWebhookStatus(null), 5000);
+      await evolutionService.setWebhook(instanceName, webhookUrl);
+      setWebhookStatus({ type: 'success', message: 'Configurado com sucesso!' });
+      console.log('Configuração salva com sucesso no servidor');
     } catch (err: any) {
-      console.error('Erro no componente:', err);
-      const msg = err.details?.message || err.message || 'Erro ao comunicar com a API.';
+      console.error('Falha no salvamento:', err);
+      const msg = err.details?.message || err.message || 'Erro de conexão.';
       setWebhookStatus({ type: 'error', message: msg });
     } finally {
       setSavingWebhook(false);
@@ -127,9 +129,9 @@ export default function WhatsAppSetupPage() {
           <p className="text-xs text-slate-500 mt-0.5">Conecte instâncias da Evolution API para capturar conversas comerciais</p>
         </div>
         <button 
+          type="button"
           onClick={loadInstances}
-          className="p-2 text-slate-400 hover:text-white transition-colors"
-          title="Recarregar"
+          className="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -143,16 +145,15 @@ export default function WhatsAppSetupPage() {
           </div>
         )}
 
+        {/* ... Restante da lista de instâncias ... */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-semibold text-slate-200">Status da Evolution API</div>
+            <div className="flex items-center justify-between mb-3 text-sm font-semibold text-slate-200">
+              Status da Evolution API
               <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${instances.length > 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-500 bg-slate-500/10 border-slate-500/30'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${instances.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'} inline-block`} />
-                {instances.length > 0 ? 'Online' : 'Verificando...'}
+                {instances.length > 0 ? 'Online' : 'Vazio'}
               </span>
             </div>
-            
             <div className="grid grid-cols-2 gap-2 mt-4">
               <div className="bg-slate-800/50 rounded-lg p-3">
                 <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Instâncias</div>
@@ -168,234 +169,112 @@ export default function WhatsAppSetupPage() {
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col items-center justify-center">
-            <div className="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center w-full min-h-[160px] flex flex-col items-center justify-center">
-              {qrCode ? (
-                <div className="space-y-3 relative group">
-                  <img src={qrCode} alt="WhatsApp QR Code" className="w-32 h-32 mx-auto rounded-lg border-4 border-white shadow-2xl" />
-                  <p className="text-[10px] font-bold text-blue-400 animate-pulse uppercase tracking-tighter">Escaneie com seu celular</p>
-                  <button onClick={() => setQrCode(null)} className="text-[10px] text-slate-500 hover:text-slate-300 underline">Fechar QR Code</button>
-                </div>
-              ) : (
-                <>
-                  <QrCode size={40} className="text-slate-600 mx-auto mb-3" />
-                  <div className="text-xs text-slate-500 mb-3">
-                    {generating ? 'Iniciando instância...' : 'Gere um novo acesso para auditar'}
-                  </div>
-                  <button 
-                    onClick={handleGenerateQr}
-                    disabled={generating}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 mx-auto font-semibold"
-                  >
-                    {generating ? <Loader2 size={14} className="animate-spin" /> : <Smartphone size={14} />}
-                    Gerar Nova Conexão
-                  </button>
-                </>
-              )}
-            </div>
+            {qrCode ? (
+              <div className="text-center">
+                <img src={qrCode} className="w-32 h-32 mx-auto rounded-lg border-4 border-white mb-2" />
+                <button onClick={() => setQrCode(null)} className="text-[10px] text-slate-500 underline">Fechar</button>
+              </div>
+            ) : (
+              <button 
+                type="button"
+                onClick={handleGenerateQr}
+                disabled={generating}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all"
+              >
+                {generating ? <Loader2 size={14} className="animate-spin" /> : <QrCode size={14} />}
+                Gerar Nova Conexão
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-4 font-bold flex items-center gap-2">
-          <div className="h-px bg-slate-800 flex-1"></div>
-          Conexões Ativas
-          <div className="h-px bg-slate-800 flex-1"></div>
-        </div>
-        
-        {loading && instances.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-            <Loader2 className="animate-spin mb-2" />
-            <span className="text-xs">Buscando dados no Railway...</span>
-          </div>
-        ) : instances.length === 0 ? (
-          <div className="bg-slate-900/50 border border-dashed border-slate-800 rounded-xl py-12 text-center">
-            <Smartphone size={32} className="text-slate-700 mx-auto mb-2" />
-            <p className="text-sm text-slate-500">Nenhuma instância conectada.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {instances.map((inst) => {
-              const isOpen = inst.status === 'open' || inst.connectionStatus === 'open'
-              const name = inst.name || inst.instanceName
-              const owner = inst.ownerJid || inst.owner || inst.number
-              const isEditing = editingId === (inst.id || inst.name)
-              
-              return (
-                <div key={name} className="bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 flex items-center justify-between group hover:border-slate-700 transition-all shadow-sm">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      {inst.profilePicUrl ? (
-                        <img src={inst.profilePicUrl} alt={name} className="w-12 h-12 rounded-full border-2 border-slate-800 object-cover" />
-                      ) : (
-                        <div className={`w-12 h-12 rounded-full ${isOpen ? 'bg-blue-600/20 text-blue-400' : 'bg-slate-800 text-slate-500'} border-2 border-slate-800 flex items-center justify-center text-xs font-bold uppercase`}>
-                          {name.substring(0, 2)}
-                        </div>
-                      )}
-                      {isOpen && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        {isEditing ? (
-                          <div className="flex items-center gap-1">
-                            <input 
-                              autoFocus
-                              value={newName}
-                              onChange={(e) => setNewName(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && saveName()}
-                              className="bg-slate-950 border border-blue-500 rounded px-2 py-0.5 text-sm text-slate-200 outline-none"
-                            />
-                            <button onClick={saveName} className="text-emerald-400 hover:text-emerald-300"><Check size={14} /></button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="text-sm font-bold text-slate-50">{inst.profileName || 'Usuário WhatsApp'}</div>
-                            <button 
-                              onClick={() => startEditing(inst)}
-                              className="p-1 text-slate-600 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all"
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <div className="text-[11px] text-slate-500 font-medium px-1.5 py-0.5 bg-slate-800 rounded leading-none">{name}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">
-                          {isOpen ? formatPhone(owner) : 'Offline'}
-                        </div>
-                      </div>
-                    </div>
+        <div className="space-y-3">
+          {instances.map((inst) => {
+            const isOpen = inst.status === 'open' || inst.connectionStatus === 'open'
+            const name = inst.name || inst.instanceName
+            return (
+              <div key={name} className="bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 flex items-center justify-between group">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+                    {inst.profilePicUrl ? <img src={inst.profilePicUrl} className="w-full h-full object-cover" /> : <Smartphone className="text-slate-500" size={20} />}
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="text-right mr-2 hidden sm:block">
-                      <div className={`text-[10px] font-bold uppercase tracking-widest ${isOpen ? 'text-emerald-500' : 'text-amber-500'}`}>
-                        {isOpen ? 'Conectado' : 'Aguardando'}
-                      </div>
-                      <div className="text-[9px] text-slate-600">Desde {new Date(inst.createdAt || Date.now()).toLocaleDateString('pt-BR')}</div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button 
-                        onClick={() => {
-                          setSelectedInstance(inst);
-                          setWebhookStatus(null);
-                        }}
-                        className="p-2.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 hover:border-blue-500/40 rounded-xl transition-all"
-                        title="Configurações e Detalhes"
-                      >
-                        <Info size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(name)}
-                        className="p-2.5 bg-slate-800/50 border border-slate-800 text-slate-600 hover:text-red-400 hover:border-red-500/30 rounded-xl transition-all"
-                        title="Excluir"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-50">{inst.profileName || name}</div>
+                    <div className="text-[11px] text-slate-500">{formatPhone(inst.ownerJid || inst.owner || inst.number)}</div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setSelectedInstance(inst);
+                    setWebhookStatus(null);
+                  }}
+                  className="p-2.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 rounded-xl cursor-pointer"
+                >
+                  <Info size={16} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Modal de Detalhes e Integração */}
       {selectedInstance && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="relative h-24 bg-gradient-to-r from-blue-600 to-indigo-700">
-              <button 
-                onClick={() => setSelectedInstance(null)} 
-                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-              <div className="absolute -bottom-10 left-8">
-                {selectedInstance.profilePicUrl ? (
-                  <img src={selectedInstance.profilePicUrl} className="w-24 h-24 rounded-2xl border-4 border-slate-900 shadow-xl object-cover" />
-                ) : (
-                  <div className="w-24 h-24 rounded-2xl border-4 border-slate-900 bg-slate-800 flex items-center justify-center text-3xl font-bold text-slate-600 shadow-xl">
-                    {selectedInstance.profileName?.substring(0, 1) || 'W'}
-                  </div>
-                )}
-              </div>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+              <h3 className="font-bold text-slate-200">Configurações da Instância</h3>
+              <button onClick={() => setSelectedInstance(null)} className="text-slate-500 hover:text-white cursor-pointer"><X size={20} /></button>
             </div>
             
-            <div className="pt-14 px-8 pb-8">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-50">{selectedInstance.profileName || 'Usuário WhatsApp'}</h3>
-                  <p className="text-slate-400 text-sm mt-1">{formatPhone(selectedInstance.ownerJid || selectedInstance.owner || selectedInstance.number)}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${selectedInstance.connectionStatus === 'open' || selectedInstance.status === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                  {selectedInstance.connectionStatus || selectedInstance.status}
-                </span>
-              </div>
-
-              {/* Seção de Integração n8n */}
-              <div className="bg-blue-600/5 border border-blue-500/20 rounded-2xl p-5 mb-6">
-                <div className="flex items-center gap-2 mb-3 text-blue-400">
-                  <Globe size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Integração com n8n</span>
-                </div>
+            <div className="p-6 space-y-6">
+              <div className="bg-blue-600/5 border border-blue-500/20 rounded-2xl p-5">
+                <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3 block">URL do Webhook n8n</label>
                 
                 {webhookStatus && (
-                  <div className={`mb-3 p-3 rounded-xl text-xs flex items-center gap-2 ${webhookStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                    {webhookStatus.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
+                  <div className={`mb-3 p-3 rounded-xl text-xs flex items-center gap-2 ${webhookStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
                     {webhookStatus.message}
                   </div>
                 )}
 
                 <div className="space-y-3">
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
-                      <Link size={14} />
-                    </div>
-                    <input 
-                      type="text"
-                      placeholder="Cole aqui a URL do seu Webhook n8n"
-                      value={webhookUrl}
-                      onChange={(e) => {
-                        setWebhookUrl(e.target.value);
-                        setWebhookStatus(null);
-                      }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-700"
-                    />
-                  </div>
+                  <input 
+                    type="text"
+                    placeholder="https://seu-n8n.com/webhook/..."
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 outline-none focus:border-blue-500 transition-all"
+                  />
                   <button 
-                    onClick={handleSaveWebhook}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+                    type="button"
+                    onClick={() => {
+                      console.log('Clique disparado pelo onClick interno');
+                      handleSaveWebhook();
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2"
                   >
-                    {savingWebhook ? (
-                      <><Loader2 size={14} className="animate-spin" /> Salvando...</>
-                    ) : (
-                      'Salvar Webhook'
-                    )}
+                    {savingWebhook ? <><Loader2 size={14} className="animate-spin" /> Salvando...</> : 'Salvar Webhook'}
                   </button>
-                  <p className="text-[10px] text-slate-500 text-center italic">Isso fará o WhatsApp enviar mensagens em tempo real para seu fluxo de IA no n8n.</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-slate-800/40 p-4 rounded-2xl text-center">
-                  <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">ID da Instância</div>
-                  <div className="text-xs text-slate-300 font-mono truncate">{selectedInstance.id || 'N/A'}</div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-500 font-bold uppercase">Nome da Instância</span>
+                  <span className="text-slate-300 font-mono">{selectedInstance.name || selectedInstance.instanceName}</span>
                 </div>
-                <div className="bg-slate-800/40 p-4 rounded-2xl text-center">
-                  <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Nome Técnico</div>
-                  <div className="text-xs text-slate-300">{selectedInstance.name || selectedInstance.instanceName}</div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-500 font-bold uppercase">Status</span>
+                  <span className="text-emerald-400 font-bold">{selectedInstance.status || selectedInstance.connectionStatus}</span>
                 </div>
               </div>
 
               <button 
+                type="button"
                 onClick={() => setSelectedInstance(null)}
-                className="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-2xl transition-all border border-slate-700"
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-3 rounded-xl cursor-pointer border border-slate-700"
               >
-                Fechar Detalhes
+                Fechar
               </button>
             </div>
           </div>
