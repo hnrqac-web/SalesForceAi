@@ -12,7 +12,9 @@ export const evolutionService = {
       const response = await fetch('/api/evolution?endpoint=/instance/fetchInstances', {
         method: 'GET',
       });
-      return await response.json();
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
       return [];
@@ -39,7 +41,9 @@ export const evolutionService = {
           },
         }),
       });
-      return await response.json();
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
     } catch (error) {
       console.error('Erro ao criar instância:', error);
       throw error;
@@ -54,7 +58,9 @@ export const evolutionService = {
       const response = await fetch(`/api/evolution?endpoint=/instance/connect/${instanceName}`, {
         method: 'GET',
       });
-      return await response.json();
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
     } catch (error) {
       console.error('Erro ao obter QR Code:', error);
       throw error;

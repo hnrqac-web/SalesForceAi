@@ -45,8 +45,9 @@ export default function WhatsAppSetupPage() {
         }
         loadInstances()
       }
-    } catch (err) {
-      setError('Erro ao gerar QR Code.')
+    } catch (err: any) {
+      const errorMsg = err.details?.message || err.error || 'Erro ao gerar QR Code.'
+      setError(`Erro: ${errorMsg}`)
     } finally {
       setGenerating(false)
     }
