@@ -60,7 +60,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-[540px] bg-slate-900 border-l border-slate-800 h-full overflow-y-auto animate-in slide-in-from-right duration-200 flex flex-col">
+      <div className="w-full sm:w-[540px] bg-slate-900 border-l border-slate-800 h-full overflow-y-auto animate-in slide-in-from-right duration-200 flex flex-col">
 
         {/* Header */}
         <div className="sticky top-0 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-5 py-4 flex items-start justify-between z-10">

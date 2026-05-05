@@ -143,30 +143,32 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="px-7 pt-6 pb-4 border-b border-slate-800 flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-50">Dashboard de Gestão</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Visão executiva das auditorias comerciais em tempo real</p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {isLoading && <Loader2 size={14} className="text-blue-500 animate-spin mr-1" />}
-          {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setPeriod(key)}
-              className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all ${
-                period === key
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div>
+            <h1 className="text-lg md:text-xl font-semibold text-slate-50">Dashboard de Gestão</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Visão executiva das auditorias em tempo real</p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {isLoading && <Loader2 size={14} className="text-blue-500 animate-spin mr-1" />}
+            {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setPeriod(key)}
+                className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all ${
+                  period === key
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="p-7">
+      <div className="p-4 md:p-7">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {isLoading && allData.length === 0 ? (
             [...Array(4)].map((_, i) => (

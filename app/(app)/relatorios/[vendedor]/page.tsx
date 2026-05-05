@@ -103,7 +103,7 @@ export default function VendedorPage() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Header */}
-      <div className="px-7 pt-6 pb-4 border-b border-slate-800 sticky top-0 bg-slate-950/80 backdrop-blur z-10">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800 sticky top-0 bg-slate-950/80 backdrop-blur z-10">
         <button
           onClick={() => router.push('/relatorios')}
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors mb-4"

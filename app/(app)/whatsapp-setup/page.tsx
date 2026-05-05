@@ -123,7 +123,7 @@ export default function WhatsAppSetupPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="px-7 pt-6 pb-4 border-b border-slate-800 flex justify-between items-center">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-50">WhatsApp Setup</h1>
           <p className="text-xs text-slate-500 mt-0.5">Conecte instâncias da Evolution API para capturar conversas comerciais</p>

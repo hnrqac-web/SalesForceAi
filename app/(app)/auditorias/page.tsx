@@ -52,7 +52,7 @@ export default function AuditoriasPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-7 pt-6 pb-4 border-b border-slate-800 flex justify-between items-end bg-slate-950/50 backdrop-blur-sm sticky top-0 z-20">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 bg-slate-950/50 backdrop-blur-sm sticky top-0 z-20">
         <div>
           <h1 className="text-xl font-semibold text-slate-50">Feed de Auditoria</h1>
           <p className="text-xs text-slate-500 mt-0.5">

@@ -76,7 +76,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div className="px-7 pt-6 pb-4 border-b border-slate-800">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800">
         <h1 className="text-xl font-semibold text-slate-50">Configurações</h1>
         <p className="text-xs text-slate-500 mt-0.5">Gerencie perfil e integrações da plataforma</p>
       </div>

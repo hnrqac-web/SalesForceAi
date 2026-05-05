@@ -116,7 +116,7 @@ export default function RelatoriosPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-7 pt-6 pb-4 border-b border-slate-800 flex justify-between items-center sticky top-0 bg-slate-950/80 backdrop-blur z-10">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sticky top-0 bg-slate-950/80 backdrop-blur z-10">
         <div>
           <h1 className="text-xl font-semibold text-slate-50">Relatórios</h1>
           <p className="text-xs text-slate-500 mt-0.5">Analytics avançado e exportação de auditorias</p>
@@ -134,7 +134,7 @@ export default function RelatoriosPage() {
         </div>
       </div>
 
-      <div className="p-7 space-y-5 overflow-y-auto">
+      <div className="p-4 md:p-7 space-y-5 overflow-y-auto">
 
         {/* Filtros */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
