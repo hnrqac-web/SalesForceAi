@@ -203,16 +203,27 @@ export default function WhatsAppSetupPage() {
                     <div className="text-[11px] text-slate-500">{formatPhone(inst.ownerJid || inst.owner || inst.number)}</div>
                   </div>
                 </div>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setSelectedInstance(inst);
-                    setWebhookStatus(null);
-                  }}
-                  className="p-2.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 rounded-xl cursor-pointer"
-                >
-                  <Info size={16} />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setSelectedInstance(inst);
+                      setWebhookStatus(null);
+                    }}
+                    className="p-2.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 hover:border-blue-500/40 rounded-xl cursor-pointer transition-all"
+                    title="Configurações e Detalhes"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleDelete(name)}
+                    className="p-2.5 bg-slate-800/50 border border-slate-800 text-slate-600 hover:text-red-400 hover:border-red-500/30 rounded-xl cursor-pointer transition-all"
+                    title="Excluir instância"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             )
           })}
