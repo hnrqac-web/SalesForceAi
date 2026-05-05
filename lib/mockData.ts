@@ -19,6 +19,28 @@ Vendedor: Entendo! Esse é exatamente o perfil de clínicas que atendemos. O nos
 Cliente: Interessante. Qual o valor?
 Vendedor: Temos planos a partir de R$297/mês. Mas antes de falar de valor, posso mostrar como funciona em 10 minutos?
 Cliente: Sim, pode me enviar um link de demonstração.`,
+    customer_intent: 'Modernizar gestão e obter acesso remoto',
+    objection_type: 'Nenhuma explícita ainda (Preço mencionado)',
+    urgency_level: 'Média',
+    buying_stage: 'Consideração',
+    trust_level: 'Alto',
+    price_sensitivity: 'Média',
+    decision_power: 'Tomador de decisão provável',
+    probability_to_close: 8.5,
+    behavioral_score: 9.0,
+    intent_score: 8.0,
+    urgency_score: 6.0,
+    trust_score: 9.0,
+    risk_level: 'Baixo',
+    risk_reason: 'Cliente muito engajado',
+    recommended_action: 'Agendar demo o mais rápido possível e focar na dor do acesso remoto',
+    explicit_objections: [],
+    hidden_objections: ['Pode achar R$297 alto comparado ao sistema atual'],
+    positive_signals: ['Aceitou fazer a demo', 'Compartilhou a dor (sistema antigo)'],
+    negative_signals: [],
+    seller_strengths: ['Não focou em preço de imediato', 'Propôs a demo no momento certo'],
+    seller_script_failures: [],
+    copy_ready_message: 'Olá! Segue o link para a nossa demo. Nela, vou focar em mostrar como o acesso remoto funciona na prática para resolver o problema com o sistema antigo.'
   },
   {
     id: '2',

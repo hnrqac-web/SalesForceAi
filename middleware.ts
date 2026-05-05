@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Proteção de rotas internas
-  const protectedRoutes = ['/dashboard', '/auditorias', '/settings', '/whatsapp-setup']
+  const protectedRoutes = ['/dashboard', '/auditorias', '/settings', '/whatsapp-setup', '/relatorios']
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
   if (!user && isProtectedRoute) {

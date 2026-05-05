@@ -6,7 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { TrendingUp, ClipboardList, AlertTriangle, DollarSign, Loader2 } from 'lucide-react'
+import { TrendingUp, ClipboardList, AlertTriangle, DollarSign, Loader2, Target, AlertCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 type Period = '1d' | '7d' | '30d' | 'all'
@@ -37,6 +37,27 @@ export default function DashboardPage() {
     (a) => a.ai_score < 5 || ['Negativo', 'Crítico'].includes(a.lead_sentiment)
   ).length, [data])
   const roi = useMemo(() => calcROI(critical), [critical])
+
+  const avgProbability = useMemo(() => {
+    const valid = data.filter(a => a.probability_to_close !== undefined)
+    if (!valid.length) return 0
+    const sum = valid.reduce((acc, a) => acc + (a.probability_to_close || 0), 0)
+    return Math.round((sum / valid.length) * 10) / 10
+  }, [data])
+
+  const topObjections = useMemo(() => {
+    const counts: Record<string, number> = {}
+    data.forEach(a => {
+      const explicit = a.explicit_objections || []
+      const hidden = a.hidden_objections || []
+      ;[...explicit, ...hidden].forEach(obj => {
+        counts[obj] = (counts[obj] || 0) + 1
+      })
+    })
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+  }, [data])
 
   // Dados para gráfico baseados no período
   const chartData = useMemo(() => {
@@ -136,6 +157,15 @@ export default function DashboardPage() {
       icon: DollarSign,
       color: 'text-emerald-400',
     },
+    {
+      title: 'Probabilidade (Média)',
+      value: `${avgProbability}/10`,
+      sub: 'Chance média de fechamento',
+      icon: Target,
+      color: 'text-purple-400',
+      progress: avgProbability * 10,
+      progressColor: 'bg-purple-500',
+    },
   ]
 
   const chartColors = ['#3b82f6', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b']
@@ -169,7 +199,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="p-4 md:p-7">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
           {isLoading && allData.length === 0 ? (
             [...Array(4)].map((_, i) => (
               <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-4 animate-pulse h-28" />
@@ -250,7 +280,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
             <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-medium">Distribuição de Sentimentos</div>
             <div className="grid grid-cols-2 gap-2">
@@ -304,7 +334,30 @@ export default function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <div className="py-8 text-center text-xs text-slate-500">Nenhum dado disponível no período</div>
+                <div className="text-xs text-slate-500 py-4 text-center">Nenhum vendedor encontrado</div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-medium flex items-center gap-1.5">
+              <AlertCircle size={12} className="text-amber-400" />
+              Principais Objeções
+            </div>
+            <div className="space-y-2">
+              {topObjections.length > 0 ? (
+                topObjections.map(([obj, count], i) => (
+                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-800/40 border border-slate-800">
+                    <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold bg-amber-500/10 text-amber-400 shrink-0">
+                      {count}
+                    </div>
+                    <div className="text-xs text-slate-300 font-medium leading-tight">
+                      {obj}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-slate-500 py-4 text-center">Nenhuma objeção registrada no período</div>
               )}
             </div>
           </div>

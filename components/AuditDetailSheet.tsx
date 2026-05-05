@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, extractTranscriptLines } from '@/lib/utils'
-import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight } from 'lucide-react'
+import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle } from 'lucide-react'
 
 interface Props {
   auditoria: Auditoria | null
@@ -43,7 +43,8 @@ function ScoreRing({ score }: { score: number }) {
 
 export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const [copied, setCopied] = useState(false)
-  const [tab, setTab] = useState<'overview' | 'transcript'>('overview')
+  const [copiedMsg, setCopiedMsg] = useState(false)
+  const [tab, setTab] = useState<'overview' | 'transcript' | 'behavior'>('overview')
 
   if (!auditoria) return null
 
@@ -111,7 +112,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
         {/* Tabs */}
         <div className="px-5 pb-2">
           <div className="flex bg-slate-800 rounded-xl p-1 gap-1">
-            {([['overview', 'Análise IA', Brain], ['transcript', 'Transcrição', MessageSquare]] as const).map(([key, label, Icon]) => (
+            {([['overview', 'Análise IA', Brain], ['behavior', 'Comportamento', Activity], ['transcript', 'Transcrição', MessageSquare]] as const).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
@@ -233,6 +234,112 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     <div className="text-[10px] text-slate-500 mb-1">Mensagem capturada:</div>
                     <p className="text-xs text-slate-300">{auditoria.transcript}</p>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'behavior' && (
+            <div className="pt-2 space-y-3">
+              {/* KPIs de Comportamento */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Intenção de Compra', score: auditoria.intent_score, icon: Target },
+                  { label: 'Urgência', score: auditoria.urgency_score, icon: Zap },
+                  { label: 'Confiança', score: auditoria.trust_score, icon: ThumbsUp },
+                  { label: 'Probabilidade', score: auditoria.probability_to_close, icon: Activity },
+                ].map(kpi => (
+                  <div key={kpi.label} className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden">
+                    <kpi.icon size={14} className="text-slate-500 mb-1" />
+                    <div className="text-[10px] text-slate-400 font-medium mb-1">{kpi.label}</div>
+                    <div className={`text-lg font-black ${getScoreColor(kpi.score || 0)}`}>
+                      {kpi.score !== undefined ? kpi.score.toFixed(1) : '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Informações Qualitativas */}
+              <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+                <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Estágio</div>
+                    <div className="text-xs text-slate-300 font-medium">{auditoria.buying_stage || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Poder de Decisão</div>
+                    <div className="text-xs text-slate-300 font-medium">{auditoria.decision_power || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Sensibilidade a Preço</div>
+                    <div className="text-xs text-slate-300 font-medium">{auditoria.price_sensitivity || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Risco</div>
+                    <div className="text-xs text-slate-300 font-medium">{auditoria.risk_level || '—'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Objeções e Sinais */}
+              <div className="grid grid-cols-1 gap-3">
+                {auditoria.explicit_objections && auditoria.explicit_objections.length > 0 && (
+                  <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">
+                      <AlertTriangle size={11} /> Objeções Explícitas
+                    </div>
+                    <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
+                      {auditoria.explicit_objections.map((obj, i) => <li key={i}>{obj}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                {auditoria.hidden_objections && auditoria.hidden_objections.length > 0 && (
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">
+                      <AlertCircle size={11} /> Objeções Ocultas (Risco)
+                    </div>
+                    <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
+                      {auditoria.hidden_objections.map((obj, i) => <li key={i}>{obj}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                {auditoria.positive_signals && auditoria.positive_signals.length > 0 && (
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
+                      <ThumbsUp size={11} /> Sinais Positivos
+                    </div>
+                    <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
+                      {auditoria.positive_signals.map((sig, i) => <li key={i}>{sig}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Ação Recomendada & Mensagem Pronta */}
+              {auditoria.copy_ready_message && (
+                <div className="bg-gradient-to-br from-blue-950/60 to-slate-900 border border-blue-500/30 rounded-xl p-4 mt-2">
+                  <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <MessageSquare size={11} />
+                    Mensagem Sugerida (Copy Ready)
+                  </div>
+                  <div className="bg-slate-950/50 rounded-lg p-3 text-xs text-blue-200/80 mb-3 border border-blue-500/20 font-medium italic">
+                    "{auditoria.copy_ready_message}"
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(auditoria.copy_ready_message || '').catch(() => {})
+                      setCopiedMsg(true)
+                      setTimeout(() => setCopiedMsg(false), 2000)
+                    }}
+                    className={`w-full py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      copiedMsg ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
+                    }`}
+                  >
+                    {copiedMsg ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedMsg ? 'Copiado!' : 'Copiar Mensagem Pronta'}
+                  </button>
                 </div>
               )}
             </div>
