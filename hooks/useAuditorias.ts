@@ -1,53 +1,51 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { Auditoria } from '@/types/auditoria'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { mockAuditorias } from '@/lib/mockData'
 
 export function useAuditorias() {
-  const [data, setData] = useState<Auditoria[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
-  const fetchAuditorias = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      setData(mockAuditorias)
-      setIsLoading(false)
-      return
-    }
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['auditorias'],
+    queryFn: async () => {
+      if (!isSupabaseConfigured) {
+        return mockAuditorias as Auditoria[]
+      }
 
-    try {
-      setIsLoading(true)
       const { data: rows, error: err } = await supabase
         .from('auditorias')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (err) throw err
-      setData(rows || [])
-      setError(null)
-    } catch (err: unknown) {
-      console.error('Erro ao buscar auditorias:', err)
-      setError('Erro ao carregar auditorias. Usando dados de demonstração.')
-      setData(mockAuditorias)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+      if (err) {
+        console.error('Erro ao buscar auditorias:', err)
+        // Fallback para mock em caso de erro se desejado, 
+        // mas aqui vamos lançar para o React Query lidar com o erro
+        throw err
+      }
+
+      return rows as Auditoria[]
+    },
+    // Se falhar e não estiver configurado, usa mock
+    initialData: !isSupabaseConfigured ? mockAuditorias as Auditoria[] : undefined,
+    retry: isSupabaseConfigured ? 3 : false,
+  })
 
   useEffect(() => {
-    fetchAuditorias()
-
     if (!isSupabaseConfigured) return
 
     const channel = supabase
-      .channel('auditorias-realtime')
+      .channel('auditorias-realtime-changes')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'auditorias' },
-        (payload) => {
-          setData((prev) => [payload.new as Auditoria, ...prev])
+        { event: '*', schema: 'public', table: 'auditorias' },
+        () => {
+          // Invalida a query para buscar dados atualizados
+          queryClient.invalidateQueries({ queryKey: ['auditorias'] })
         }
       )
       .subscribe()
@@ -55,7 +53,12 @@ export function useAuditorias() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [fetchAuditorias])
+  }, [queryClient])
 
-  return { data, isLoading, error, refetch: fetchAuditorias }
+  return { 
+    data: data || [], 
+    isLoading, 
+    error: error ? (error as Error).message : null,
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['auditorias'] })
+  }
 }

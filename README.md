@@ -1,103 +1,75 @@
-# SalesForce AI Auditor
+# SalesForce AI Auditor 🚀
 
-Plataforma de Inteligência Comercial e Auditoria de Vendas via WhatsApp com IA.
+Plataforma de Inteligência Comercial e Auditoria de Vendas automatizada com IA. Originalmente concebido no Lovable e profissionalizado para produção com Next.js, Supabase e TanStack Query.
 
-## Stack
+## 🛠 Tech Stack
 
-- **Frontend:** Next.js 14 App Router + TypeScript
-- **Estilização:** Tailwind CSS
-- **UI:** Lucide Icons + componentes customizados
-- **Gráficos:** Recharts
-- **Backend:** Supabase (Database + Auth + Realtime)
-- **IA:** Gemini Flash via n8n
-- **Integração WhatsApp:** Evolution API
+- **Framework**: Next.js 14 (App Router)
+- **Linguagem**: TypeScript
+- **Estilização**: Tailwind CSS + Lucide Icons
+- **Banco de Dados & Auth**: Supabase
+- **Estado & Cache**: TanStack Query (React Query)
+- **Gráficos**: Recharts
+- **Deployment**: Vercel
 
-## Configuração
+## 🚀 Como Começar
 
-### 1. Clone o repositório
-
+### 1. Clonar o repositório
 ```bash
 git clone https://github.com/hnrqac-web/SalesForceAi.git
 cd SalesForceAi
+```
+
+### 2. Instalar dependências
+```bash
 npm install
 ```
 
-### 2. Configure as variáveis de ambiente
-
-```bash
-cp .env.example .env.local
-```
-
-Edite `.env.local`:
+### 3. Configurar Variáveis de Ambiente
+Crie um arquivo `.env` na raiz do projeto (use o `.env.example` como base):
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_anon_key
+NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon_do_supabase
 ```
 
-### 3. Crie a tabela no Supabase
+### 4. Configurar o Supabase
+1. Crie um novo projeto no [Supabase](https://supabase.com).
+2. Vá em **SQL Editor** e execute o conteúdo do arquivo `schema.sql` deste repositório.
+3. Habilite o **Realtime** para a tabela `auditorias` (já incluso no SQL).
+4. Configure a **Autenticação** (Email/Senha) no dashboard do Supabase.
 
-```sql
-create table auditorias (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz default now(),
-  vendedor_name text not null,
-  cliente_name text not null,
-  transcript text,
-  ai_score numeric(4,1),
-  ai_summary text,
-  next_step_suggestion text,
-  lead_sentiment text
-);
-
-alter table auditorias enable row level security;
-create policy "Leitura autenticada" on auditorias
-  for select using (auth.role() = 'authenticated');
-create policy "Insert via service_role" on auditorias
-  for insert with check (true);
-```
-
-### 4. Rode localmente
-
+### 5. Rodar localmente
 ```bash
 npm run dev
 ```
+Acesse [http://localhost:3000](http://localhost:3000).
 
-Acesse: http://localhost:3000
+## 📊 Estrutura do Banco (Supabase)
 
-## Fluxo de dados
+Tabela: `auditorias`
+- `id`: UUID (Primary Key)
+- `created_at`: Timestamp
+- `vendedor_name`: Text
+- `cliente_name`: Text
+- `transcript`: Text (Transcrição da conversa)
+- `ai_score`: Float (Nota de 0 a 10)
+- `ai_summary`: Text (Resumo executivo)
+- `next_step_suggestion`: Text (Sugestão de coaching)
+- `lead_sentiment`: Text (Positivo, Neutro, Negativo, Crítico)
 
-```
-WhatsApp → Evolution API → n8n → Gemini Flash → Supabase → Dashboard
-```
+## ☁️ Deploy na Vercel
 
-### JSON inserido pelo n8n no Supabase
+1. Suba seu código para o GitHub.
+2. Conecte o repositório na [Vercel](https://vercel.com).
+3. Adicione as variáveis de ambiente (`NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+4. Clique em **Deploy**.
 
-```json
-{
-  "vendedor_name": "Mariana Costa",
-  "cliente_name": "Clínica Vitalis",
-  "transcript": "Cliente: Olá...\nVendedor: Boa tarde...",
-  "ai_score": 8.7,
-  "ai_summary": "Vendedor demonstrou abordagem consultiva...",
-  "next_step_suggestion": "Olá! Ficou alguma dúvida sobre...",
-  "lead_sentiment": "Interessado"
-}
-```
+## 🔮 Próximos Passos Recomendados
 
-## Deploy na Vercel
+1. **Integração Evolution API**: Conectar o WhatsApp para capturar mensagens automaticamente.
+2. **Workflow n8n**: Criar um fluxo que recebe a mensagem, envia para o Gemini para análise e salva no Supabase.
+3. **Gemini AI**: Refinar os prompts de análise para maior precisão nos scores e sugestões de coaching.
+4. **Relatórios PDF**: Gerar relatórios de performance semanais para os vendedores.
 
-```bash
-npm install -g vercel
-vercel --prod
-```
-
-Configure as variáveis de ambiente na dashboard da Vercel.
-
-## Telas
-
-| Rota | Descrição |
-|------|-----------|
-| `/dashboard` | KPIs executivos + gráfico semanal |
-| `/auditorias` | Feed com filtros + Raio-X lateral |
-| `/whatsapp-setup` | Gestão de instâncias Evolution API |
-| `/settings` | Perfil + chaves de integração |
+---
+Desenvolvido com ❤️ por Antigravity AI.
