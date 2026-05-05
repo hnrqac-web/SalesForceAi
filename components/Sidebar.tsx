@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAuditorias } from '@/hooks/useAuditorias'
 import {
   LayoutDashboard,
   FileSearch,
@@ -11,20 +12,19 @@ import {
   Settings,
   Activity,
   LogOut,
-  User,
+  AlertTriangle,
+  BarChart2,
 } from 'lucide-react'
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/auditorias', label: 'Auditorias', icon: FileSearch },
-  { href: '/whatsapp-setup', label: 'WhatsApp Setup', icon: MessageCircle },
-  { href: '/settings', label: 'Configurações', icon: Settings },
-]
 
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
+  const { data } = useAuditorias()
+
+  const criticalCount = data.filter(
+    a => a.ai_score < 5 || ['Negativo', 'Crítico'].includes(a.lead_sentiment)
+  ).length
 
   useEffect(() => {
     const getUser = async () => {
@@ -39,7 +39,25 @@ export function Sidebar() {
     router.push('/login')
   }
 
-  const userInitials = user?.email?.split('@')[0].slice(0, 2).toUpperCase() || 'US'
+  const displayName =
+    user?.user_metadata?.full_name ||
+    user?.email?.split('@')[0] ||
+    'Usuário'
+
+  const userInitials = displayName
+    .split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/auditorias', label: 'Auditorias', icon: FileSearch, badge: criticalCount },
+    { href: '/relatorios', label: 'Relatórios', icon: BarChart2 },
+    { href: '/whatsapp-setup', label: 'WhatsApp Setup', icon: MessageCircle },
+    { href: '/settings', label: 'Configurações', icon: Settings },
+  ]
 
   return (
     <aside className="w-[220px] min-w-[220px] bg-slate-900 border-r border-slate-800 flex flex-col h-screen sticky top-0">
@@ -55,8 +73,18 @@ export function Sidebar() {
         </div>
       </div>
 
+      {criticalCount > 0 && (
+        <div className="mx-3 mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2">
+          <AlertTriangle size={13} className="text-red-400 shrink-0" />
+          <div>
+            <div className="text-[10px] font-bold text-red-400">{criticalCount} lead{criticalCount > 1 ? 's' : ''} crítico{criticalCount > 1 ? 's' : ''}</div>
+            <div className="text-[9px] text-red-400/60">Atenção imediata</div>
+          </div>
+        </div>
+      )}
+
       <nav className="flex-1 p-2 space-y-0.5 mt-2">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {navItems.map(({ href, label, icon: Icon, badge }) => {
           const active = pathname === href
           return (
             <Link
@@ -69,7 +97,14 @@ export function Sidebar() {
               }`}
             >
               <Icon size={15} strokeWidth={active ? 2.5 : 2} />
-              <span className={active ? 'font-semibold' : 'font-medium'}>{label}</span>
+              <span className={`flex-1 ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
+              {badge !== undefined && badge > 0 && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  active ? 'bg-white/20 text-white' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                }`}>
+                  {badge}
+                </span>
+              )}
             </Link>
           )
         })}
@@ -82,13 +117,13 @@ export function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[11px] font-bold text-slate-200 truncate leading-none mb-1">
-              {user?.email?.split('@')[0] || 'Usuário'}
+              {displayName}
             </div>
             <div className="text-[9px] text-slate-500 font-medium truncate uppercase tracking-tighter">
               {user?.email || 'Acessando...'}
             </div>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             title="Sair"
             className="p-1.5 rounded-md hover:bg-red-500/10 hover:text-red-400 text-slate-500 transition-colors"

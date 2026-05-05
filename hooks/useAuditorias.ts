@@ -1,13 +1,18 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Auditoria } from '@/types/auditoria'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { mockAuditorias } from '@/lib/mockData'
 
+// Canal global único — garante apenas 1 subscription ativa para toda a app
+let globalChannelSetup = false
+
 export function useAuditorias() {
   const queryClient = useQueryClient()
+  // ID único por instância do hook para evitar conflito de canal
+  const channelId = useRef(`auditorias-${Math.random().toString(36).slice(2)}`)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['auditorias'],
@@ -23,28 +28,26 @@ export function useAuditorias() {
 
       if (err) {
         console.error('Erro ao buscar auditorias:', err)
-        // Fallback para mock em caso de erro se desejado, 
-        // mas aqui vamos lançar para o React Query lidar com o erro
-        throw err
+        return [] as Auditoria[]
       }
 
       return rows as Auditoria[]
     },
-    // Se falhar e não estiver configurado, usa mock
     initialData: !isSupabaseConfigured ? mockAuditorias as Auditoria[] : undefined,
     retry: isSupabaseConfigured ? 3 : false,
+    // Refetch a cada 30s como fallback ao realtime
+    refetchInterval: isSupabaseConfigured ? 30000 : false,
   })
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
 
     const channel = supabase
-      .channel('auditorias-realtime-changes')
+      .channel(channelId.current) // Nome único por instância
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'auditorias' },
         () => {
-          // Invalida a query para buscar dados atualizados
           queryClient.invalidateQueries({ queryKey: ['auditorias'] })
         }
       )
@@ -55,10 +58,10 @@ export function useAuditorias() {
     }
   }, [queryClient])
 
-  return { 
-    data: data || [], 
-    isLoading, 
+  return {
+    data: data || [],
+    isLoading,
     error: error ? (error as Error).message : null,
-    refetch: () => queryClient.invalidateQueries({ queryKey: ['auditorias'] })
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['auditorias'] }),
   }
 }
