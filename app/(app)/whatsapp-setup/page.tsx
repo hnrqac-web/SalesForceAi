@@ -19,6 +19,7 @@ export default function WhatsAppSetupPage() {
       const list = Array.isArray(data) ? data : data.instances || []
       setInstances(list)
       setError(null)
+      console.log('Instâncias carregadas:', list)
     } catch (err) {
       setError('Erro ao carregar instâncias. Verifique sua configuração da Evolution API.')
     } finally {
@@ -58,17 +59,21 @@ export default function WhatsAppSetupPage() {
     try {
       await evolutionService.deleteInstance(name)
       loadInstances()
-      if (selectedInstance?.instanceName === name) setSelectedInstance(null)
+      if (selectedInstance?.instanceName === name || selectedInstance?.name === name) setSelectedInstance(null)
     } catch (err) {
       setError('Erro ao excluir instância.')
     }
   }
 
-  const formatPhone = (owner: string) => {
-    if (!owner) return 'Aguardando conexão...'
-    // Remove @s.whatsapp.net e limpa
-    const clean = owner.split('@')[0]
-    // Formato +55 (11) 99999-9999
+  const formatPhone = (owner: any) => {
+    if (!owner) return 'Número não identificado'
+    
+    // Converte para string se não for
+    const strOwner = String(owner)
+    
+    // Remove tudo que não é número
+    const clean = strOwner.split('@')[0].replace(/\D/g, '')
+    
     if (clean.length >= 11) {
       return `+${clean.substring(0, 2)} (${clean.substring(2, 4)}) ${clean.substring(4, 9)}-${clean.substring(9)}`
     }
@@ -117,7 +122,7 @@ export default function WhatsAppSetupPage() {
               <div className="bg-slate-800/50 rounded-lg p-2.5">
                 <div className="text-[10px] text-slate-500">Conectadas</div>
                 <div className="text-base font-bold text-slate-200">
-                  {instances.filter(i => (i.status === 'open' || i.connectionStatus === 'open')).length}
+                  {instances.filter(i => (i.status === 'open' || i.connectionStatus === 'open' || i.instance?.status === 'open')).length}
                 </div>
               </div>
             </div>
@@ -166,20 +171,32 @@ export default function WhatsAppSetupPage() {
         ) : (
           <div className="space-y-2">
             {instances.map((inst) => {
-              const isOpen = inst.status === 'open' || inst.connectionStatus === 'open'
-              const name = inst.instanceName || inst.name
-              const owner = inst.owner || inst.number
+              // Tenta encontrar o status em vários lugares possíveis
+              const isOpen = inst.status === 'open' || 
+                             inst.connectionStatus === 'open' || 
+                             inst.instance?.status === 'open' ||
+                             inst.authState === 'open'
+              
+              const name = inst.instanceName || inst.name || inst.instance?.instanceName
+              
+              // Tenta encontrar o número em vários lugares possíveis
+              const owner = inst.owner || 
+                            inst.number || 
+                            inst.ownerJid || 
+                            inst.jid || 
+                            inst.instance?.owner ||
+                            inst.instance?.number
               
               return (
                 <div key={name} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center justify-between group">
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-full ${isOpen ? 'bg-blue-600' : 'bg-slate-700'} flex items-center justify-center text-[10px] font-bold text-white uppercase`}>
-                      {name.substring(0, 2)}
+                      {name ? name.substring(0, 2) : 'WA'}
                     </div>
                     <div>
                       <div className="text-sm font-medium text-slate-200">{name}</div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        {formatPhone(owner)}
+                        {isOpen ? formatPhone(owner) : 'Aguardando conexão...'}
                       </div>
                     </div>
                   </div>
@@ -220,22 +237,22 @@ export default function WhatsAppSetupPage() {
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Nome</label>
-                  <div className="text-sm text-slate-200">{selectedInstance.instanceName || selectedInstance.name}</div>
+                  <div className="text-sm text-slate-200">{selectedInstance.instanceName || selectedInstance.name || selectedInstance.instance?.instanceName}</div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Status de Conexão</label>
-                  <div className="text-sm text-slate-200 uppercase">{selectedInstance.status || selectedInstance.connectionStatus}</div>
+                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Status</label>
+                  <div className="text-sm text-slate-200 uppercase">{selectedInstance.status || selectedInstance.connectionStatus || selectedInstance.instance?.status || 'Desconhecido'}</div>
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Número Vinculado</label>
-                  <div className="text-sm text-slate-200">{selectedInstance.owner || selectedInstance.number || 'Não vinculado'}</div>
+                  <div className="text-sm text-slate-200">{selectedInstance.owner || selectedInstance.number || selectedInstance.ownerJid || 'Não identificado'}</div>
                 </div>
-                {selectedInstance.profileName && (
-                  <div>
-                    <label className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Nome no Perfil</label>
-                    <div className="text-sm text-slate-200">{selectedInstance.profileName}</div>
-                  </div>
-                )}
+                <div>
+                  <label className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Debug Info</label>
+                  <pre className="text-[10px] bg-slate-950 p-2 rounded-lg mt-1 text-slate-400 overflow-auto max-h-32">
+                    {JSON.stringify(selectedInstance, null, 2)}
+                  </pre>
+                </div>
               </div>
               <div className="mt-8">
                 <button 
