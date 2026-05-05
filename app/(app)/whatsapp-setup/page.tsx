@@ -15,6 +15,7 @@ export default function WhatsAppSetupPage() {
   const [newName, setNewName] = useState('')
   const [webhookUrl, setWebhookUrl] = useState('')
   const [savingWebhook, setSavingWebhook] = useState(false)
+  const [webhookStatus, setWebhookStatus] = useState<{type: 'success' | 'error', message: string} | null>(null)
 
   const loadInstances = async () => {
     try {
@@ -69,27 +70,30 @@ export default function WhatsAppSetupPage() {
   }
 
   const handleSaveWebhook = async () => {
+    setWebhookStatus(null);
+    
     if (!webhookUrl) {
-      alert('Por favor, cole a URL do Webhook do n8n primeiro.');
+      setWebhookStatus({ type: 'error', message: 'Por favor, cole a URL do n8n.' });
       return;
     }
     
     const name = selectedInstance.instanceName || selectedInstance.name || selectedInstance.instance?.instanceName;
-    console.log('Tentando salvar Webhook para:', name);
-    
     if (!name) {
-      alert('Erro: Nome da instância não encontrado.');
+      setWebhookStatus({ type: 'error', message: 'Erro interno: Nome da instância não encontrado.' });
       return;
     }
 
     setSavingWebhook(true);
     try {
-      const result = await evolutionService.setWebhook(name, webhookUrl);
-      console.log('Resultado do salvamento:', result);
-      alert('✅ Webhook configurado com sucesso! O n8n já pode receber suas mensagens.');
+      console.log('Iniciando salvamento de webhook para:', name);
+      await evolutionService.setWebhook(name, webhookUrl);
+      setWebhookStatus({ type: 'success', message: 'Webhook configurado com sucesso!' });
+      // Limpa a mensagem após 5 segundos
+      setTimeout(() => setWebhookStatus(null), 5000);
     } catch (err: any) {
-      console.error('Erro ao salvar webhook:', err);
-      alert('❌ Erro ao configurar: ' + (err.details?.message || err.message || 'Erro desconhecido'));
+      console.error('Erro no componente:', err);
+      const msg = err.details?.message || err.message || 'Erro ao comunicar com a API.';
+      setWebhookStatus({ type: 'error', message: msg });
     } finally {
       setSavingWebhook(false);
     }
@@ -274,7 +278,10 @@ export default function WhatsAppSetupPage() {
 
                     <div className="flex items-center gap-1.5">
                       <button 
-                        onClick={() => setSelectedInstance(inst)}
+                        onClick={() => {
+                          setSelectedInstance(inst);
+                          setWebhookStatus(null);
+                        }}
                         className="p-2.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 hover:border-blue-500/40 rounded-xl transition-all"
                         title="Configurações e Detalhes"
                       >
@@ -335,6 +342,14 @@ export default function WhatsAppSetupPage() {
                   <Globe size={16} />
                   <span className="text-xs font-bold uppercase tracking-wider">Integração com n8n</span>
                 </div>
+                
+                {webhookStatus && (
+                  <div className={`mb-3 p-3 rounded-xl text-xs flex items-center gap-2 ${webhookStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                    {webhookStatus.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
+                    {webhookStatus.message}
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <div className="relative">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
@@ -344,48 +359,43 @@ export default function WhatsAppSetupPage() {
                       type="text"
                       placeholder="Cole aqui a URL do seu Webhook n8n"
                       value={webhookUrl}
-                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      onChange={(e) => {
+                        setWebhookUrl(e.target.value);
+                        setWebhookStatus(null);
+                      }}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-700"
                     />
                   </div>
                   <button 
                     onClick={handleSaveWebhook}
-                    disabled={savingWebhook || !webhookUrl}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
                   >
-                    {savingWebhook ? <Loader2 size={14} className="animate-spin" /> : 'Salvar Webhook'}
+                    {savingWebhook ? (
+                      <><Loader2 size={14} className="animate-spin" /> Salvando...</>
+                    ) : (
+                      'Salvar Webhook'
+                    )}
                   </button>
-                  <p className="text-[10px] text-slate-500 text-center">Isso fará o WhatsApp enviar mensagens em tempo real para seu fluxo de IA.</p>
+                  <p className="text-[10px] text-slate-500 text-center italic">Isso fará o WhatsApp enviar mensagens em tempo real para seu fluxo de IA no n8n.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-slate-800/40 p-4 rounded-2xl">
+                <div className="bg-slate-800/40 p-4 rounded-2xl text-center">
                   <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">ID da Instância</div>
                   <div className="text-xs text-slate-300 font-mono truncate">{selectedInstance.id || 'N/A'}</div>
                 </div>
-                <div className="bg-slate-800/40 p-4 rounded-2xl">
+                <div className="bg-slate-800/40 p-4 rounded-2xl text-center">
                   <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Nome Técnico</div>
                   <div className="text-xs text-slate-300">{selectedInstance.name || selectedInstance.instanceName}</div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between text-xs py-2 border-b border-slate-800">
-                  <span className="text-slate-500">Integração</span>
-                  <span className="text-slate-300 font-semibold">{selectedInstance.integration || 'WHATSAPP-BAILEYS'}</span>
-                </div>
-                <div className="flex justify-between text-xs py-2 border-b border-slate-800">
-                  <span className="text-slate-500">Criada em</span>
-                  <span className="text-slate-300 font-semibold">{new Date(selectedInstance.createdAt).toLocaleString('pt-BR')}</span>
-                </div>
-              </div>
-
               <button 
                 onClick={() => setSelectedInstance(null)}
-                className="w-full mt-8 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-2xl transition-all"
+                className="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-2xl transition-all border border-slate-700"
               >
-                Fechar
+                Fechar Detalhes
               </button>
             </div>
           </div>
