@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+type SchemaSupport = {
+  hasClienteJid: boolean
+  hasTranscriptCompleto: boolean
+  hasStatus: boolean
+}
+
 async function parseResponse(response: Response) {
   const contentType = response.headers.get('content-type') || ''
 
@@ -17,18 +23,173 @@ async function parseResponse(response: Response) {
   }
 }
 
+function normalizeInstancesResponse(data: any) {
+  if (Array.isArray(data)) return data
+  return data?.instances || data?.data || data?.response || []
+}
+
+function normalizeCollection(data: any) {
+  if (Array.isArray(data)) return data
+  return data?.messages || data?.data || data?.response || data?.response?.data || []
+}
+
+function extractMessageText(message: any) {
+  return (
+    message?.message?.conversation ||
+    message?.message?.extendedTextMessage?.text ||
+    message?.message?.imageMessage?.caption ||
+    message?.message?.videoMessage?.caption ||
+    message?.message?.documentMessage?.caption ||
+    message?.message?.audioMessage?.caption ||
+    message?.content ||
+    message?.text ||
+    (message?.message?.audioMessage ? '(Áudio)' : '') ||
+    (message?.message?.locationMessage ? 'Localização enviada' : '') ||
+    (message?.message?.contactMessage ? 'Contato compartilhado' : '')
+  )
+}
+
+async function fetchEvolution(baseUrl: string, apiKey: string, endpoint: string, init?: RequestInit) {
+  const response = await fetch(`${baseUrl}${endpoint}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: apiKey,
+      ...(init?.headers || {}),
+    },
+  })
+
+  const data = await parseResponse(response)
+  return { response, data }
+}
+
+async function columnExists(supabase: any, column: string) {
+  const { error } = await supabase.from('auditorias').select(`id,${column}`).limit(1)
+  return !error
+}
+
+async function detectSchemaSupport(supabase: any): Promise<SchemaSupport> {
+  const [hasClienteJid, hasTranscriptCompleto, hasStatus] = await Promise.all([
+    columnExists(supabase, 'cliente_jid'),
+    columnExists(supabase, 'transcript_completo'),
+    columnExists(supabase, 'status'),
+  ])
+
+  return { hasClienteJid, hasTranscriptCompleto, hasStatus }
+}
+
+async function fetchMessagesForChat(baseUrl: string, apiKey: string, instanceName: string, remoteJid: string) {
+  const candidates = [remoteJid, remoteJid.split('@')[0]].filter(Boolean)
+
+  for (const candidate of candidates) {
+    for (const nested of [true, false]) {
+      const body = nested
+        ? { where: { key: { remoteJid: candidate } } }
+        : { where: { remoteJid: candidate } }
+
+      const { response, data } = await fetchEvolution(baseUrl, apiKey, `/chat/findMessages/${instanceName}`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+
+      if (!response.ok) continue
+
+      const messages = normalizeCollection(data)
+      if (Array.isArray(messages) && messages.length > 0) {
+        return messages
+      }
+    }
+  }
+
+  return []
+}
+
+function formatTranscript(messages: any[]) {
+  return [...messages]
+    .reverse()
+    .map((message) => {
+      const text = extractMessageText(message)
+      if (!text) return null
+
+      const fromMe = message?.key?.fromMe || message?.fromMe
+      return `${fromMe ? 'Vendedor' : 'Cliente'}: ${text}`
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+async function upsertAuditoria(
+  supabase: any,
+  schemaSupport: SchemaSupport,
+  vendedorName: string,
+  clienteName: string,
+  clienteJid: string,
+  transcript: string
+) {
+  const selectColumns = ['id', 'cliente_name', 'transcript']
+  if (schemaSupport.hasClienteJid) selectColumns.push('cliente_jid')
+  if (schemaSupport.hasStatus) selectColumns.push('status')
+
+  const { data: existingRows, error: selectError } = await supabase
+    .from('auditorias')
+    .select(selectColumns.join(','))
+    .eq('vendedor_name', vendedorName)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (selectError) throw selectError
+
+  const cleanJid = clienteJid.split('@')[0]
+  const existing = (existingRows || []).find((row: any) => {
+    const jidMatches = schemaSupport.hasClienteJid && row.cliente_jid && [row.cliente_jid, `${row.cliente_jid}@s.whatsapp.net`].includes(clienteJid)
+    const nameMatches = row.cliente_name === clienteName
+    const statusMatches = !schemaSupport.hasStatus || !row.status || row.status === 'aberto'
+    return statusMatches && (jidMatches || nameMatches)
+  })
+
+  const payload: Record<string, any> = {
+    cliente_name: clienteName || cleanJid,
+    vendedor_name: vendedorName,
+    transcript,
+    ai_score: 0,
+    ai_summary: 'Conversa sincronizada do WhatsApp. Aguardando análise.',
+    next_step_suggestion: 'Revise a conversa sincronizada para gerar a análise comercial.',
+    lead_sentiment: 'Neutro',
+  }
+
+  if (schemaSupport.hasClienteJid) payload.cliente_jid = cleanJid
+  if (schemaSupport.hasTranscriptCompleto) payload.transcript_completo = transcript
+  if (schemaSupport.hasStatus && !existing) payload.status = 'aberto'
+
+  if (existing?.id) {
+    const { error: updateError } = await supabase
+      .from('auditorias')
+      .update(payload)
+      .eq('id', existing.id)
+
+    if (updateError) throw updateError
+    return
+  }
+
+  const { error: insertError } = await supabase
+    .from('auditorias')
+    .insert(payload)
+
+  if (insertError) throw insertError
+}
+
 export async function POST(req: NextRequest) {
   try {
-    void req
-
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     const evolutionUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL
     const evolutionKey = process.env.EVOLUTION_API_KEY
+    const authorization = req.headers.get('authorization')
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl) {
       return NextResponse.json(
-        { error: 'Configuração do Supabase incompleta. Defina NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.' },
+        { error: 'Configuração do Supabase incompleta. Defina NEXT_PUBLIC_SUPABASE_URL.' },
         { status: 500 }
       )
     }
@@ -42,14 +203,34 @@ export async function POST(req: NextRequest) {
 
     const baseEvolutionUrl = evolutionUrl.endsWith('/') ? evolutionUrl.slice(0, -1) : evolutionUrl
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseKey = supabaseServiceKey || supabaseAnonKey
+    if (!supabaseKey) {
+      return NextResponse.json(
+        { error: 'Configuração do Supabase incompleta. Defina SUPABASE_SERVICE_ROLE_KEY ou NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+        { status: 500 }
+      )
+    }
+
+    if (!supabaseServiceKey && !authorization) {
+      return NextResponse.json(
+        { error: 'Sessão não encontrada para sincronizar sem service role.' },
+        { status: 401 }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, supabaseServiceKey ? undefined : {
+      global: {
+        headers: {
+          Authorization: authorization || '',
+        },
+      },
+    })
+
+    const schemaSupport = await detectSchemaSupport(supabase)
 
     // 1. Busca instâncias
     console.log('[Sync] Buscando instâncias...')
-    const instResponse = await fetch(`${baseEvolutionUrl}/instance/fetchInstances`, {
-      headers: { apikey: evolutionKey }
-    })
-    const instData = await parseResponse(instResponse)
+    const { response: instResponse, data: instData } = await fetchEvolution(baseEvolutionUrl, evolutionKey, '/instance/fetchInstances')
     if (!instResponse.ok) {
       console.error('[Sync] Falha ao buscar instâncias:', instData)
       return NextResponse.json(
@@ -58,11 +239,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const instances = Array.isArray(instData) ? instData : (instData?.data || instData?.response || [])
+    const instances = normalizeInstancesResponse(instData)
     
     console.log(`[Sync] Encontradas ${instances.length} instâncias.`)
 
     let totalImported = 0
+    let totalSkipped = 0
+
     // Processa todas as instâncias encontradas
     for (const inst of instances) {
       const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name
@@ -82,36 +265,32 @@ export async function POST(req: NextRequest) {
 
       // 2. Tenta buscar CHATS
       console.log(`[Sync] Buscando chats para ${name}...`)
-      const chatsResponse = await fetch(`${baseEvolutionUrl}/chat/findChats/${name}`, {
+      const { response: chatsResponse, data: chatsData } = await fetchEvolution(baseEvolutionUrl, evolutionKey, `/chat/findChats/${name}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: evolutionKey },
         body: JSON.stringify({})
       })
-      
-      const chatsData = await parseResponse(chatsResponse)
+
       if (!chatsResponse.ok) {
         console.error(`[Sync] Falha ao buscar chats para ${name}:`, chatsData)
         continue
       }
 
-      let chats = Array.isArray(chatsData) ? chatsData : (chatsData?.data || chatsData?.response || [])
+      let chats = normalizeCollection(chatsData)
       
       // 3. Fallback para CONTATOS se chats estiver vazio
       if (chats.length === 0) {
         console.log(`[Sync] Chats vazios para ${name}, tentando contatos...`)
-        const contactsResponse = await fetch(`${baseEvolutionUrl}/chat/findContacts/${name}`, {
+        const { response: contactsResponse, data: contactsData } = await fetchEvolution(baseEvolutionUrl, evolutionKey, `/chat/findContacts/${name}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', apikey: evolutionKey },
           body: JSON.stringify({})
         })
 
-        const contactsData = await parseResponse(contactsResponse)
         if (!contactsResponse.ok) {
           console.error(`[Sync] Falha ao buscar contatos para ${name}:`, contactsData)
           continue
         }
 
-        chats = Array.isArray(contactsData) ? contactsData : (contactsData?.data || contactsData?.response || [])
+        chats = normalizeCollection(contactsData)
       }
 
       console.log(`[Sync] Encontrados ${chats.length} registros para ${name}`)
@@ -120,27 +299,40 @@ export async function POST(req: NextRequest) {
       // 4. Processa cada registro
       for (const chat of recentToProcess) {
         const jid = chat.id || chat.remoteJid || chat.jid
-        if (!jid) continue;
+        if (!jid) {
+          totalSkipped++
+          continue
+        }
 
         const clienteNome = chat.name || chat.pushName || jid.split('@')[0]
         
         try {
-          const { error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
-            p_cliente_jid: jid,
-            p_cliente_name: clienteNome,
-            p_vendedor_name: vendedorId,
-            p_message: 'Sincronização manual (Resiliente)',
-            p_from_me: true
-          })
-          
-          if (!rpcError) totalImported++
+          const messages = await fetchMessagesForChat(baseEvolutionUrl, evolutionKey, name, jid)
+          const transcript = formatTranscript(messages)
+
+          if (!transcript) {
+            totalSkipped++
+            continue
+          }
+
+          await upsertAuditoria(
+            supabase,
+            schemaSupport,
+            String(vendedorId),
+            clienteNome,
+            jid,
+            transcript
+          )
+
+          totalImported++
         } catch (e) {
           console.error(`[Sync] Erro ao processar JID ${jid}:`, e)
+          totalSkipped++
         }
       }
     }
 
-    return NextResponse.json({ success: true, imported: totalImported })
+    return NextResponse.json({ success: true, imported: totalImported, skipped: totalSkipped })
   } catch (error: any) {
     console.error('[Sync API] Erro:', error)
     return NextResponse.json({ error: error.message || 'Erro interno na sincronização' }, { status: 500 })

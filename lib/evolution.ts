@@ -39,49 +39,53 @@ export const evolutionService = {
     try {
       const response = await fetch('/api/evolution?endpoint=/instance/fetchInstances', {
         method: 'GET',
-      });
-      const data = await response.json();
-      const list = Array.isArray(data) ? data : (data?.data || data?.response || []);
+      })
+      const data = await response.json()
+      const list = normalizeInstancesResponse(data)
       
-      console.log('[Evolution] Instâncias recebidas:', list);
+      console.log('[Evolution] Instâncias recebidas:', list)
 
       const processedInstances = await Promise.all(list.map(async (inst: any) => {
-        // Tenta encontrar o nome da instância
-        const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name;
-        const connectionStatus = inst.status || inst.connectionStatus || inst.instance?.status || inst.instance?.connectionStatus;
+        const normalized = normalizeInstance(inst)
+        const name = normalized.instanceName || normalized.name
+        const connectionStatus = normalized.connectionStatus || normalized.status
 
-        // Caminhos padrão da v2
-        let owner = inst.owner || inst.instance?.owner || inst.data?.owner || inst.connection?.owner || inst.instance?.data?.owner || null;
-        let profileName = inst.profileName || inst.instance?.profileName || inst.data?.profileName || inst.instance?.data?.profileName || null;
+        let owner = normalized.owner || normalized.ownerJid || null
+        let profileName = normalized.profileName || null
+        let number = normalized.number || null
 
-        // SE NÃO ACHOU O OWNER, tenta buscar no connectionState (Deep Check)
         if (!owner && name && connectionStatus === 'open') {
           try {
-            console.log(`[Evolution] Deep check para instância: ${name}`);
-            const stateResp = await fetch(`/api/evolution?endpoint=/instance/connectionState/${name}`, { method: 'GET' });
-            const stateData = await stateResp.json();
+            console.log(`[Evolution] Deep check para instância: ${name}`)
+            const stateResp = await fetch(`/api/evolution?endpoint=/instance/connectionState/${name}`, { method: 'GET' })
+            const stateData = await stateResp.json()
             
-            // Na v2, o JID costuma estar em instance.owner ou instance.user.id
-            const deepInstance = stateData?.instance || stateData?.data?.instance;
-            owner = deepInstance?.owner || deepInstance?.user?.id || stateData?.user?.id || null;
-            profileName = deepInstance?.profileName || deepInstance?.pushname || null;
+            const deepInstance = stateData?.instance || stateData?.data?.instance
+            owner = deepInstance?.owner || deepInstance?.user?.id || stateData?.user?.id || owner
+            profileName = deepInstance?.profileName || deepInstance?.pushname || profileName
+            number = deepInstance?.number || deepInstance?.owner?.split?.('@')?.[0] || number
           } catch (e) {
-            console.error(`Erro no deep check de ${name}:`, e);
+            console.error(`Erro no deep check de ${name}:`, e)
           }
         }
 
         return {
+          ...normalized,
           name,
+          instanceName: normalized.instanceName || name,
+          status: normalized.status || connectionStatus,
           connectionStatus,
           owner,
-          profileName
-        };
-      }));
+          ownerJid: owner,
+          number: number || (typeof owner === 'string' ? owner.split('@')[0].replace(/\D/g, '') : normalized.number),
+          profileName,
+        }
+      }))
 
-      return processedInstances;
+      return processedInstances
     } catch (error) {
-      console.error('Erro ao buscar instâncias:', error);
-      return [];
+      console.error('Erro ao buscar instâncias:', error)
+      return []
     }
   },
 

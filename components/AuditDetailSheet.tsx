@@ -393,7 +393,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                   {(() => {
                     const s = auditoria.ai_score
                     const isPositive = ['Positivo', 'Interessado'].includes(auditoria.lead_sentiment)
-                    const transcriptLen = (auditoria.transcript || '').length
+                    const transcriptLen = (auditoria.transcript_completo || auditoria.transcript || '').length
                     // Scores determinísticos baseados no score geral e dados reais
                     const breakdown = [
                       { label: 'Abertura da conversa', score: Math.min(10, Math.max(0, s + (transcriptLen > 500 ? 0.5 : -0.5))) },
@@ -458,7 +458,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                   <p className="text-xs text-slate-400 dark:text-slate-500">Transcrição não disponível</p>
                   <div className="mt-3 bg-slate-100 dark:bg-slate-800 rounded-xl p-3 text-left">
                     <div className="text-[10px] text-slate-400 dark:text-slate-500 mb-1">Mensagem capturada:</div>
-                    <p className="text-xs text-slate-700 dark:text-slate-300">{auditoria.transcript}</p>
+                    <p className="text-xs text-slate-700 dark:text-slate-300">{auditoria.transcript_completo || auditoria.transcript}</p>
                   </div>
                 </div>
               )}

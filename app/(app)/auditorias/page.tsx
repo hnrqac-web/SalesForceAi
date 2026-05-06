@@ -122,12 +122,18 @@ export default function AuditoriasPage() {
               onClick={async () => {
                 const toastId = toast.loading('Sincronizando chats recentes via servidor...')
                 try {
-                  const response = await fetch('/api/sync', { method: 'POST' })
+                  const { data: sessionData } = await supabase.auth.getSession()
+                  const accessToken = sessionData.session?.access_token
+
+                  const response = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+                  })
                   const result = await response.json()
-                  
+                   
                   if (!response.ok) throw new Error(result.error || 'Erro no servidor')
-                  
-                  toast.success(`Sincronização concluída! ${result.imported} chats processados.`, { id: toastId })
+                   
+                  toast.success(`Sincronização concluída! ${result.imported} conversas importadas.`, { id: toastId })
                   refetch()
                 } catch (err: any) {
                   console.error('Erro no Sync:', err)
