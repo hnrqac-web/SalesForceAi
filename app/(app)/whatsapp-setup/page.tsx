@@ -21,8 +21,7 @@ export default function WhatsAppSetupPage() {
     try {
       setLoading(true)
       const data = await evolutionService.getInstances()
-      const list = Array.isArray(data) ? data : data.instances || []
-      setInstances(list)
+      setInstances(data)
       setError(null)
     } catch (err) {
       setError('Erro ao carregar instâncias. Verifique sua configuração da Evolution API.')

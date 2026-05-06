@@ -3,18 +3,46 @@
  * Isso protege a API_KEY de ser exposta no navegador.
  */
 
+function normalizeInstance(rawInstance: any) {
+  const nested = rawInstance?.instance || {}
+
+  return {
+    ...rawInstance,
+    ...nested,
+    id: rawInstance?.id || nested?.id || nested?.instanceId,
+    instanceId: rawInstance?.instanceId || nested?.instanceId,
+    name: rawInstance?.name || rawInstance?.instanceName || nested?.name || nested?.instanceName,
+    instanceName: rawInstance?.instanceName || nested?.instanceName,
+    profileName: rawInstance?.profileName || nested?.profileName || rawInstance?.pushName || nested?.pushName,
+    profilePicUrl: rawInstance?.profilePicUrl || rawInstance?.profilePictureUrl || nested?.profilePicUrl || nested?.profilePictureUrl,
+    owner: rawInstance?.owner || nested?.owner,
+    ownerJid: rawInstance?.ownerJid || nested?.ownerJid || rawInstance?.owner || nested?.owner,
+    number: rawInstance?.number || nested?.number,
+    status: rawInstance?.status || nested?.status,
+    connectionStatus: rawInstance?.connectionStatus || nested?.connectionStatus || rawInstance?.status || nested?.status,
+  }
+}
+
+function normalizeInstancesResponse(data: any) {
+  const list = Array.isArray(data)
+    ? data
+    : data?.instances || data?.response?.message || []
+
+  return Array.isArray(list) ? list.map(normalizeInstance) : []
+}
+
 export const evolutionService = {
   /**
    * Lista todas as instâncias
    */
-  async getInstances() {
+  async getInstances(): Promise<any[]> {
     try {
       const response = await fetch('/api/evolution?endpoint=/instance/fetchInstances', {
         method: 'GET',
       });
       const data = await response.json();
       if (!response.ok) throw data;
-      return data;
+      return normalizeInstancesResponse(data);
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
       return [];
