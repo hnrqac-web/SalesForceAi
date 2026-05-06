@@ -21,24 +21,17 @@ serve(async (req) => {
     const remoteJid = body.data?.key?.remoteJid || '';
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido';
     
-    // CAPTURA DO NOME REAL DA CONTA SINCRONIZADA:
-    // 1. Tenta pegar do objeto 'instance' (comum em versões novas)
-    // 2. Tenta pegar do 'pushName' da mensagem (quando fromMe é true)
-    // 3. Fallback para 'Henrique Alves' se for a sua instância Admin-965
-    let vendedorNome = 'Henrique Alves'; // Default para o seu caso
+    // LOGICA "TANQUE DE GUERRA": Força Henrique Alves se for a sua instância
+    const instanciaRaw = body.instance || body.instanceName || '';
+    const instanciaStr = typeof instanciaRaw === 'object' ? (instanciaRaw.name || instanciaRaw.pushName || '') : String(instanciaRaw);
+    
+    let vendedorNome = 'Henrique Alves';
 
-    if (typeof body.instance === 'object' && body.instance?.pushName) {
-      vendedorNome = body.instance.pushName;
-    } else if (fromMe && body.data?.pushName) {
-      vendedorNome = body.data.pushName;
-    } else {
-      // Se for apenas o ID string, verificamos se é o seu
-      const instanciaId = typeof body.instance === 'string' ? body.instance : (body.instanceName || '');
-      if (instanciaId.includes('Admin-965')) {
-        vendedorNome = 'Henrique Alves';
-      } else {
-        vendedorNome = instanciaId;
-      }
+    if (!instanciaStr.toLowerCase().includes('admin-965')) {
+      // Se for OUTRA instância que não a sua, ele usa o nome dela
+      vendedorNome = instanciaStr;
+      if (typeof instanciaRaw === 'object' && instanciaRaw.pushName) vendedorNome = instanciaRaw.pushName;
+      if (fromMe && body.data?.pushName) vendedorNome = body.data.pushName;
     }
 
     const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId);
