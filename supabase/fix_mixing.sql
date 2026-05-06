@@ -28,14 +28,20 @@ BEGIN
     ORDER BY created_at DESC
     LIMIT 1;
 
-    -- Se não encontrar, cria uma nova usando o JID e o Nome fornecido
+    -- Se não encontrar, cria uma nova usando o JID e o Nome fornecido (ou JID como fallback)
     IF v_auditoria_id IS NULL THEN
         INSERT INTO auditorias (cliente_jid, cliente_name, vendedor_name, transcript_completo, last_ai_trigger)
-        VALUES (p_cliente_jid, p_cliente_name, p_vendedor_name, '', '-infinity')
+        VALUES (
+            p_cliente_jid, 
+            COALESCE(NULLIF(p_cliente_name, ''), split_part(p_cliente_jid, '@', 1)), 
+            p_vendedor_name, 
+            '', 
+            '-infinity'
+        )
         RETURNING id, transcript_completo, last_ai_trigger INTO v_auditoria_id, v_transcript_completo, v_last_ai_trigger;
     ELSE
-        -- Se a auditoria já existe mas o nome do cliente veio preenchido (e era apenas o número antes), atualiza o nome
-        IF p_cliente_name IS NOT NULL AND p_cliente_name <> '' AND (v_transcript_completo IS NULL OR v_transcript_completo = '') THEN
+        -- Se a auditoria já existe mas o nome do cliente está genérico/vazio e agora veio um nome real
+        IF p_cliente_name IS NOT NULL AND p_cliente_name <> '' AND (cliente_name IS NULL OR cliente_name = '' OR cliente_name = split_part(p_cliente_jid, '@', 1)) THEN
             UPDATE auditorias SET cliente_name = p_cliente_name WHERE id = v_auditoria_id;
         END IF;
     END IF;

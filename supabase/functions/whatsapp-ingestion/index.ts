@@ -41,19 +41,19 @@ serve(async (req) => {
                     body.data?.message?.videoMessage?.caption ||
                     body.data?.message?.text || 
                     body.data?.text ||
+                    body.data?.content ||
+                    body.data?.message?.content ||
                     ''
     if (!message) return new Response(JSON.stringify({ status: 'no_message' }), { status: 200 })
 
-    const fromMe = body.data?.key?.fromMe || false
-    const remoteJid = body.data?.key?.remoteJid || ''
+    const fromMe = body.data?.key?.fromMe || body.data?.fromMe || false
+    const remoteJid = body.data?.key?.remoteJid || body.data?.remoteJid || ''
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido'
     const vendedorNome = extractSellerName(body)
     
-    // IMPORTANTE: Se for o vendedor respondendo, o pushName no body é o nome do Vendedor.
-    // Precisamos manter o nome do CLIENTE na auditoria.
-    // Se não tivermos o nome do cliente no body (porque é fromMe), enviamos apenas o ID/JID,
-    // e deixamos a RPC cuidar de encontrar a auditoria existente pelo JID.
-    const clienteNome = fromMe ? '' : (body.data?.pushName || clienteId)
+    // Se for o vendedor iniciando, não teremos o pushName do cliente.
+    // Usamos o ID (número) como nome temporário se não houver nome.
+    const clienteNome = (fromMe ? '' : body.data?.pushName) || clienteId
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
