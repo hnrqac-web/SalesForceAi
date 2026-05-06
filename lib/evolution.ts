@@ -193,32 +193,59 @@ export const evolutionService = {
    */
   async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
     try {
-      // O proxy agora é inteligente e repassa todos os parâmetros automaticamente
-      const response = await fetch(`/api/evolution?endpoint=/chat/fetchMessages/${instanceName}&number=${remoteJid}&count=${count}`, {
-        method: 'GET',
+      const response = await fetch('/api/evolution', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          endpoint: `/chat/findMessages/${instanceName}`,
+          method: 'POST',
+          body: {
+            where: {
+              key: {
+                remoteJid: remoteJid
+              }
+            }
+          }
+        }),
       });
+
       const data = await response.json();
       if (!response.ok) throw data;
+      
+      // A v2 retorna as mensagens dentro de data, pode precisar de ajuste se o formato mudar
       return data;
     } catch (error) {
-      console.error('Erro ao buscar histórico:', error);
+      console.error('Erro ao buscar histórico (v2):', error);
       throw error;
     }
   },
 
   /**
-   * Busca a lista de contatos da instância (mais confiável que chats)
+   * Busca a lista de contatos da instância (v2)
    */
   async fetchContacts(instanceName: string) {
     try {
-      const response = await fetch(`/api/evolution?endpoint=/contact/fetchContacts/${instanceName}`, {
-        method: 'GET',
+      const response = await fetch('/api/evolution', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          endpoint: `/chat/findContacts/${instanceName}`,
+          method: 'POST',
+          body: {
+            // "where": {} vazio para trazer todos
+          }
+        }),
       });
+
       const data = await response.json();
       if (!response.ok) throw data;
       return data;
     } catch (error) {
-      console.error('Erro ao buscar contatos:', error);
+      console.error('Erro ao buscar contatos (v2):', error);
       return [];
     }
   },
@@ -229,14 +256,16 @@ export const evolutionService = {
   async findJidByName(instanceName: string, name: string): Promise<string | null> {
     try {
       const contacts = await this.fetchContacts(instanceName);
-      if (!Array.isArray(contacts)) return null;
+      // Na v2 pode vir dentro de um array direto ou em um campo data
+      const list = Array.isArray(contacts) ? contacts : (contacts?.data || contacts?.response || []);
+      if (!Array.isArray(list)) return null;
 
       // Procura por um contato que tenha o nome parecido
-      const target = contacts.find((c: any) => 
+      const target = list.find((c: any) => 
         c.name?.toLowerCase().includes(name.toLowerCase()) ||
         c.pushName?.toLowerCase().includes(name.toLowerCase()) ||
-        name.toLowerCase().includes(c.name?.toLowerCase()) ||
-        name.toLowerCase().includes(c.pushName?.toLowerCase())
+        name.toLowerCase().includes(c.name?.toLowerCase() || '') ||
+        name.toLowerCase().includes(c.pushName?.toLowerCase() || '')
       );
 
       return target?.id || target?.remoteJid || target?.jid || null;
