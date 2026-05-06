@@ -77,51 +77,71 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   }
 
   const handleSyncHistory = async () => {
-    if (!auditoria.cliente_jid) {
-      toast.error('JID do cliente não disponível para sincronização.')
-      return
+    let jid = auditoria.cliente_jid
+    
+    // Fallback: se não tem JID, tenta ver se o nome do cliente é um número
+    if (!jid && auditoria.cliente_name && /^\d+$/.test(auditoria.cliente_name.replace(/\D/g, ''))) {
+      jid = auditoria.cliente_name.replace(/\D/g, '')
     }
+
+    // Se ainda não tem JID, pede para o usuário digitar o número
+    if (!jid) {
+      const input = window.prompt('JID (Número) do cliente não encontrado. Por favor, digite o número do WhatsApp com DDD (ex: 5511999999999):')
+      if (!input) return
+      jid = input.replace(/\D/g, '')
+    }
+
+    if (!jid) return
 
     setIsSyncing(true)
     try {
+      // Garante que o JID tenha o formato correto para a API
+      const cleanJid = jid.includes('@') ? jid : `${jid.split('@')[0]}@s.whatsapp.net`
+
       // 1. Busca histórico da Evolution API
       const response = await evolutionService.fetchMessages(
         auditoria.vendedor_name, 
-        auditoria.cliente_jid,
-        30 // Puxa as últimas 30 mensagens
+        cleanJid,
+        50 // Puxa as últimas 50 mensagens para garantir
       )
 
       const messages = response?.messages || []
-      if (messages.length === 0) {
-        toast.info('Nenhuma mensagem nova encontrada no WhatsApp.')
+      if (!Array.isArray(messages) || messages.length === 0) {
+        toast.info('Nenhuma mensagem encontrada para este número no WhatsApp.')
         return
       }
 
       // 2. Formata o novo transcript
       const formattedTranscript = messages
-        .reverse() // Do mais antigo para o mais novo
+        .reverse()
         .map((m: any) => {
           const fromMe = m.key?.fromMe
           const text = m.message?.conversation || 
                        m.message?.extendedTextMessage?.text || 
                        m.message?.imageMessage?.caption || 
+                       m.message?.videoMessage?.caption ||
                        ' (Mídia ou Mensagem não suportada)'
           return `${fromMe ? 'Vendedor' : 'Cliente'}: ${text}`
         })
         .join('\n')
 
-      // 3. Atualiza o banco de dados
+      // 3. Atualiza o banco de dados (também salva o JID para a próxima vez)
       const { error } = await supabase
         .from('auditorias')
-        .update({ transcript_completo: formattedTranscript })
+        .update({ 
+          transcript_completo: formattedTranscript,
+          cliente_jid: jid.split('@')[0] // Salva apenas o número puro
+        })
         .eq('id', auditoria.id)
 
       if (error) throw error
 
-      toast.success('Histórico sincronizado! Recarregue a página para ver.')
+      toast.success('Histórico sincronizado com sucesso!')
+      // Recarrega os dados locais se necessário ou avisa o usuário
+      setTimeout(() => window.location.reload(), 1500)
     } catch (err) {
       console.error('Erro na sincronização:', err)
-      toast.error('Erro ao sincronizar histórico com o WhatsApp.')
+      toast.error('Erro ao sincronizar. Verifique se o número e a instância estão corretos.')
     } finally {
       setIsSyncing(false)
     }
