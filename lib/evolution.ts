@@ -170,38 +170,39 @@ export const evolutionService = {
   },
 
   /**
-   * Busca a lista de chats da instância
+   * Busca a lista de contatos da instância (mais confiável que chats)
    */
-  async fetchChats(instanceName: string) {
+  async fetchContacts(instanceName: string) {
     try {
-      const response = await fetch(`/api/evolution?endpoint=/chat/fetchChats/${instanceName}`, {
+      const response = await fetch(`/api/evolution?endpoint=/contact/fetchContacts/${instanceName}`, {
         method: 'GET',
       });
       const data = await response.json();
       if (!response.ok) throw data;
       return data;
     } catch (error) {
-      console.error('Erro ao buscar chats:', error);
+      console.error('Erro ao buscar contatos:', error);
       return [];
     }
   },
 
   /**
-   * Tenta encontrar o JID de um contato pelo nome
+   * Tenta encontrar o JID de um contato pelo nome usando a lista de contatos
    */
   async findJidByName(instanceName: string, name: string): Promise<string | null> {
     try {
-      const chats = await this.fetchChats(instanceName);
-      if (!Array.isArray(chats)) return null;
+      const contacts = await this.fetchContacts(instanceName);
+      if (!Array.isArray(contacts)) return null;
 
-      // Procura por um chat que tenha o nome parecido
-      const targetChat = chats.find((c: any) => 
+      // Procura por um contato que tenha o nome parecido
+      const target = contacts.find((c: any) => 
         c.name?.toLowerCase().includes(name.toLowerCase()) ||
         c.pushName?.toLowerCase().includes(name.toLowerCase()) ||
-        name.toLowerCase().includes(c.name?.toLowerCase())
+        name.toLowerCase().includes(c.name?.toLowerCase()) ||
+        name.toLowerCase().includes(c.pushName?.toLowerCase())
       );
 
-      return targetChat?.id || targetChat?.remoteJid || null;
+      return target?.id || target?.remoteJid || target?.jid || null;
     } catch (error) {
       console.error('Erro ao encontrar JID por nome:', error);
       return null;

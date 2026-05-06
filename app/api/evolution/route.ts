@@ -84,16 +84,29 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
     });
-    
+
     let data;
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
-      data = { message: await response.text() };
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
+      }
     }
 
-    return NextResponse.json(data, { status: response.status });
+    if (!response.ok) {
+      return NextResponse.json({ 
+        error: 'Erro na Evolution API', 
+        details: data,
+        status: response.status 
+      }, { status: response.status });
+    }
+
+    return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
