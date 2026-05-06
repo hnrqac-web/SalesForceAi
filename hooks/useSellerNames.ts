@@ -114,7 +114,7 @@ export function useSellerNames() {
       if (!aliasKey || typeof window === 'undefined') return
 
       const trimmedValue = value.trim()
-      const nextAliases = {
+      const nextAliases: Record<string, string> = {
         ...sellerAliases,
         ...(trimmedValue ? { [aliasKey]: trimmedValue } : {}),
       }
