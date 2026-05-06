@@ -35,8 +35,8 @@ export function useAuditorias() {
     },
     initialData: !isSupabaseConfigured ? mockAuditorias as Auditoria[] : undefined,
     retry: isSupabaseConfigured ? 3 : false,
-    // Refetch a cada 30s como fallback ao realtime
-    refetchInterval: isSupabaseConfigured ? 30000 : false,
+    // Refetch a cada 3s para garantir atualização automática ultra rápida
+    refetchInterval: isSupabaseConfigured ? 3000 : false,
   })
 
   useEffect(() => {
