@@ -7,6 +7,8 @@ import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, getInitials } from '@/lib/utils'
 import { Search, Calendar, User, Loader2, ChevronLeft, ChevronRight, Filter, X, ChevronUp, ChevronDown, Lock } from 'lucide-react'
 import { evolutionService } from '@/lib/evolution'
+import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase'
 
 type SortKey = 'created_at' | 'ai_score' | 'vendedor_name' | 'cliente_name' | 'lead_sentiment'
 type SortDir = 'asc' | 'desc'
@@ -115,13 +117,52 @@ export default function AuditoriasPage() {
         </div>
         {isLoading && <Loader2 size={16} className="text-blue-500 animate-spin mb-1" />}
         {!isLoading && (
-          <button 
-            onClick={() => refetch()} 
-            className="text-[10px] bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-lg hover:bg-blue-600/20 transition-colors font-medium flex items-center gap-1.5"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            AO VIVO
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={async () => {
+                const toastId = toast.loading('Buscando novos chats nas instâncias...')
+                try {
+                  const instances = await evolutionService.getInstances()
+                  let totalImported = 0
+                  
+                  for (const inst of instances) {
+                    if (inst.connectionStatus !== 'open') continue
+                    const chats = await evolutionService.findChats(inst.name)
+                    
+                    for (const chat of chats) {
+                      const jid = chat.id || chat.remoteJid
+                      const name = chat.name || chat.pushName || jid.split('@')[0]
+                      
+                      const { data: rpcData, error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
+                        p_cliente_jid: jid,
+                        p_cliente_name: name,
+                        p_vendedor_name: inst.name,
+                        p_message: 'Sincronização inicial do chat',
+                        p_from_me: true
+                      })
+                      if (!rpcError) totalImported++
+                    }
+                  }
+                  
+                  toast.success(`${totalImported} chats verificados/sincronizados.`, { id: toastId })
+                  refetch()
+                } catch (err) {
+                  toast.error('Erro ao sincronizar chats.', { id: toastId })
+                }
+              }} 
+              className="text-[10px] bg-slate-600/10 text-slate-400 border border-slate-500/20 px-2 py-1 rounded-lg hover:bg-slate-600/20 transition-colors font-medium flex items-center gap-1.5"
+            >
+              <Search size={12} />
+              SINCRONIZAR CHATS
+            </button>
+            <button 
+              onClick={() => refetch()} 
+              className="text-[10px] bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-lg hover:bg-blue-600/20 transition-colors font-medium flex items-center gap-1.5"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              AO VIVO
+            </button>
+          </div>
         )}
       </div>
 

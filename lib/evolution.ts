@@ -261,6 +261,32 @@ export const evolutionService = {
   },
 
   /**
+   * Busca a lista de chats ativos na instância
+   */
+  async findChats(instanceName: string, where: any = {}): Promise<any[]> {
+    try {
+      const response = await fetch('/api/evolution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: `/chat/findChats/${instanceName}`,
+          method: 'POST',
+          body: { where }
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) return [];
+      
+      const list = Array.isArray(data) ? data : (data?.data || data?.response || []);
+      return Array.isArray(list) ? list : [];
+    } catch (error) {
+      console.error('Erro ao buscar chats (v2):', error);
+      return [];
+    }
+  },
+
+  /**
    * Tenta encontrar o JID de um contato pelo nome usando a lista de contatos
    */
   async findJidByName(instanceName: string, name: string): Promise<string | null> {
