@@ -11,8 +11,7 @@
 }
 
 body {
-  background-color: #020617;
-  color: #f8fafc;
+  /* Cores geridas pelo Tailwind (bg-slate-50 dark:bg-slate-950) no layout.tsx */
 }
 
 ::-webkit-scrollbar {

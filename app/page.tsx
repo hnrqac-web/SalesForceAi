@@ -66,21 +66,21 @@ const steps = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 overflow-x-hidden">
       {/* Navbar */}
-      <nav className="fixed top-0 inset-x-0 z-50 border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-xl">
+      <nav className="fixed top-0 inset-x-0 z-50 border-b border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/30 flex-shrink-0">
               <Activity size={14} className="text-white" />
             </div>
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="font-bold text-slate-50 text-sm tracking-tight">SalesForce AI</span>
-              <span className="hidden sm:inline text-[10px] text-slate-500 font-medium uppercase tracking-widest border border-slate-700 px-1.5 py-0.5 rounded">Auditor</span>
+              <span className="font-bold text-slate-900 dark:text-slate-50 text-sm tracking-tight">SalesForce AI</span>
+              <span className="hidden sm:inline text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded">Auditor</span>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/login" className="text-xs sm:text-sm text-slate-400 hover:text-slate-200 transition-colors font-medium">
+            <Link href="/login" className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors font-medium">
               Entrar
             </Link>
             <Link
@@ -107,7 +107,7 @@ export default function LandingPage() {
             Powered by Google Gemini AI
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-slate-50 leading-tight mb-4 sm:mb-6 tracking-tight px-2">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-slate-900 dark:text-slate-50 leading-tight mb-4 sm:mb-6 tracking-tight px-2">
             Audite cada conversa{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
               de vendas
@@ -115,7 +115,7 @@ export default function LandingPage() {
             com IA
           </h1>
 
-          <p className="text-sm sm:text-lg text-slate-400 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed px-2">
+          <p className="text-sm sm:text-lg text-slate-400 dark:text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed px-2">
             Analise automaticamente conversas do WhatsApp, gere scores de qualidade, receba coaching em tempo real e nunca perca um lead crítico novamente.
           </p>
 
@@ -129,7 +129,7 @@ export default function LandingPage() {
             </Link>
             <a
               href="#como-funciona"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl transition-all text-sm"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl transition-all text-sm"
             >
               Como funciona
             </a>
@@ -138,9 +138,9 @@ export default function LandingPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-12 sm:mt-16 px-2">
             {stats.map(s => (
-              <div key={s.label} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 sm:p-4">
+              <div key={s.label} className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4">
                 <div className="text-xl sm:text-2xl font-black text-blue-400 mb-1">{s.value}</div>
-                <div className="text-[10px] sm:text-[11px] text-slate-500">{s.label}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">{s.label}</div>
               </div>
             ))}
           </div>
@@ -150,15 +150,15 @@ export default function LandingPage() {
       {/* Dashboard Preview */}
       <section className="py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto overflow-hidden rounded-3xl">
-          <div className="bg-slate-900 border border-slate-800 shadow-2xl shadow-black/50">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl shadow-black/50">
             {/* Fake browser bar */}
-            <div className="bg-slate-800/80 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 border-b border-slate-700">
+            <div className="bg-slate-100 dark:bg-slate-800/80 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 border-b border-slate-300 dark:border-slate-700">
               <div className="flex gap-1.5 flex-shrink-0">
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500/60" />
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-500/60" />
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500/60" />
               </div>
-              <div className="flex-1 mx-2 sm:mx-4 bg-slate-700 rounded-lg px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] text-slate-400 truncate">
+              <div className="flex-1 mx-2 sm:mx-4 bg-slate-700 rounded-lg px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400 truncate">
                 app.salesforce-ai.com/dashboard
               </div>
             </div>
@@ -171,19 +171,19 @@ export default function LandingPage() {
                   { label: 'Críticos', val: '3', color: 'text-red-400' },
                   { label: 'ROI Est.', val: 'R$21k', color: 'text-emerald-400' },
                 ].map(card => (
-                  <div key={card.label} className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2 sm:p-3">
-                    <div className="text-[8px] sm:text-[9px] text-slate-500 mb-1 uppercase">{card.label}</div>
+                  <div key={card.label} className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-2 sm:p-3">
+                    <div className="text-[8px] sm:text-[9px] text-slate-400 dark:text-slate-500 mb-1 uppercase">{card.label}</div>
                     <div className={`text-base sm:text-xl font-black ${card.color}`}>{card.val}</div>
                   </div>
                 ))}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                <div className="sm:col-span-2 bg-slate-800/60 border border-slate-700/50 rounded-xl p-2 sm:p-3 h-20 sm:h-28 flex items-end gap-1">
+                <div className="sm:col-span-2 bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-2 sm:p-3 h-20 sm:h-28 flex items-end gap-1">
                   {[6, 7, 8, 6, 9, 7, 8, 9, 8, 7, 9, 8].map((h, i) => (
                     <div key={i} className="flex-1 rounded-t" style={{ height: `${h * 10}%`, background: i === 8 ? '#3b82f6' : '#1e40af80' }} />
                   ))}
                 </div>
-                <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+                <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                   {['Mariana C.', 'Rafael L.', 'Bruno A.'].map((name, i) => (
                     <div key={name} className="flex items-center gap-2">
                       <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-blue-600/30 text-blue-400 flex items-center justify-center text-[7px] sm:text-[8px] font-bold flex-shrink-0">{name[0]}</div>
@@ -205,17 +205,17 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8 sm:mb-12">
             <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Funcionalidades</div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-50 mb-3 sm:mb-4">Tudo que seu time precisa</h2>
-            <p className="text-slate-400 text-sm max-w-xl mx-auto">Uma plataforma completa para elevar a qualidade das suas vendas via WhatsApp.</p>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-50 mb-3 sm:mb-4">Tudo que seu time precisa</h2>
+            <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 text-sm max-w-xl mx-auto">Uma plataforma completa para elevar a qualidade das suas vendas via WhatsApp.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {features.map(f => (
-              <div key={f.title} className={`bg-slate-900 border rounded-2xl p-4 sm:p-5 ${f.bg}`}>
+              <div key={f.title} className={`bg-white dark:bg-slate-900 border rounded-2xl p-4 sm:p-5 ${f.bg}`}>
                 <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-3 ${f.bg} border`}>
                   <f.icon size={16} className={f.color} />
                 </div>
                 <h3 className="text-sm font-bold text-slate-100 mb-1.5">{f.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -223,11 +223,11 @@ export default function LandingPage() {
       </section>
 
       {/* Como funciona */}
-      <section id="como-funciona" className="py-14 sm:py-20 px-4 sm:px-6 bg-slate-900/30">
+      <section id="como-funciona" className="py-14 sm:py-20 px-4 sm:px-6 bg-white dark:bg-slate-900/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8 sm:mb-12">
             <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Simples e Rápido</div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-50 mb-4">Configure em 3 passos</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-50 mb-4">Configure em 3 passos</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6">
             {steps.map((step, i) => (
@@ -236,7 +236,7 @@ export default function LandingPage() {
                   <span className="text-xl font-black text-blue-400">{step.num}</span>
                 </div>
                 <h3 className="text-sm font-bold text-slate-100 mb-2">{step.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{step.desc}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -254,10 +254,10 @@ export default function LandingPage() {
                   <Star key={i} size={13} className="text-amber-400 fill-amber-400" />
                 ))}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-50 mb-3 sm:mb-4">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-50 mb-3 sm:mb-4">
                 Pronto para auditar suas vendas?
               </h2>
-              <p className="text-slate-400 text-sm mb-6 sm:mb-8 leading-relaxed">
+              <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 text-sm mb-6 sm:mb-8 leading-relaxed">
                 Entre no dashboard e comece a monitorar cada conversa com a precisão da inteligência artificial.
               </p>
               <Link
@@ -267,7 +267,7 @@ export default function LandingPage() {
                 Acessar o Dashboard
                 <ArrowRight size={16} />
               </Link>
-              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-5 sm:mt-6 text-[11px] text-slate-500">
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-5 sm:mt-6 text-[11px] text-slate-400 dark:text-slate-500">
                 {['Sem cartão de crédito', 'Setup em minutos', 'Suporte incluso'].map(item => (
                   <div key={item} className="flex items-center gap-1">
                     <CheckCircle size={11} className="text-emerald-500" />
@@ -281,13 +281,13 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 py-6 sm:py-8 px-4 sm:px-6">
+      <footer className="border-t border-slate-200 dark:border-slate-800 py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
               <Activity size={12} className="text-white" />
             </div>
-            <span className="text-xs font-bold text-slate-400">SalesForce AI Auditor</span>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 dark:text-slate-400">SalesForce AI Auditor</span>
           </div>
           <p className="text-[11px] text-slate-600 text-center">
             © 2025 SalesForce AI Auditor · Powered by Gemini AI + Evolution API

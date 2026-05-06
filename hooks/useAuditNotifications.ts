@@ -23,33 +23,37 @@ export function useAuditNotifications() {
       .channel(channelId.current)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'auditorias' },
+        { event: '*', schema: 'public', table: 'auditorias' },
         (payload) => {
           if (isFirstLoad.current) return
 
-          const audit = payload.new as Auditoria
+          // Atualiza a tabela invisivelmente sempre que houver INSERT ou UPDATE
           queryClient.invalidateQueries({ queryKey: ['auditorias'] })
 
-          const score = audit.ai_score
-          const cliente = audit.cliente_name || 'Novo cliente'
-          const vendedor = audit.vendedor_name || 'Vendedor'
+          // Exibir Toast Notification APENAS para novos atendimentos (INSERT)
+          if (payload.eventType === 'INSERT') {
+            const audit = payload.new as Auditoria
+            const score = audit.ai_score
+            const cliente = audit.cliente_name || 'Novo cliente'
+            const vendedor = audit.vendedor_name || 'Vendedor'
 
-          if (score < 5) {
-            toast.error(`🚨 Lead Crítico — ${cliente}`, {
-              description: `${vendedor} · Score: ${score?.toFixed(1)}/10 · Atenção imediata necessária`,
-              duration: 8000,
-              action: { label: 'Ver', onClick: () => window.location.href = '/auditorias' },
-            })
-          } else if (score < 7) {
-            toast.warning(`⚠️ Atenção — ${cliente}`, {
-              description: `${vendedor} · Score: ${score?.toFixed(1)}/10`,
-              duration: 5000,
-            })
-          } else {
-            toast.success(`✅ Nova auditoria — ${cliente}`, {
-              description: `${vendedor} · Score: ${score?.toFixed(1)}/10`,
-              duration: 4000,
-            })
+            if (score < 5) {
+              toast.error(`🚨 Lead Crítico — ${cliente}`, {
+                description: `${vendedor} · Score: ${score?.toFixed(1)}/10 · Atenção imediata necessária`,
+                duration: 8000,
+                action: { label: 'Ver', onClick: () => window.location.href = '/auditorias' },
+              })
+            } else if (score < 7) {
+              toast.warning(`⚠️ Atenção — ${cliente}`, {
+                description: `${vendedor} · Score: ${score?.toFixed(1)}/10`,
+                duration: 5000,
+              })
+            } else {
+              toast.success(`✅ Nova auditoria — ${cliente}`, {
+                description: `${vendedor} · Score: ${score?.toFixed(1)}/10`,
+                duration: 4000,
+              })
+            }
           }
         }
       )

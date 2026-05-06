@@ -37,7 +37,7 @@ function ScoreRing({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-xl font-black" style={{ color }}>{score}</span>
-        <span className="text-[8px] text-slate-500 font-bold">/ 10</span>
+        <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold">/ 10</span>
       </div>
     </div>
   )
@@ -103,22 +103,22 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex justify-end" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full sm:w-[540px] bg-slate-900 border-l border-slate-800 h-full overflow-y-auto animate-in slide-in-from-right duration-200 flex flex-col">
+      <div className="w-full sm:w-[540px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 h-full overflow-y-auto animate-in slide-in-from-right duration-200 flex flex-col">
 
         {/* Header */}
-        <div className="sticky top-0 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-5 py-4 flex items-start justify-between z-10">
+        <div className="sticky top-0 bg-white dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-5 py-4 flex items-start justify-between z-10">
           <div>
-            <div className="flex items-center gap-2 text-sm font-bold text-slate-50">
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-50">
               <Zap size={14} className="text-cyan-400" />
               Raio-X da Auditoria
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
               {auditoria.cliente_name} · {formatDate(auditoria.created_at)}
             </div>
           </div>
           <div className="flex items-center gap-2">
             {auditoria.status === 'concluido' ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800/50 text-slate-500 rounded-lg text-[10px] font-bold border border-slate-700/50">
+              <span className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 rounded-lg text-[10px] font-bold border border-slate-300 dark:border-slate-700/50">
                 <Lock size={12} />
                 CONCLUÍDO
               </span>
@@ -132,7 +132,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                 FINALIZAR
               </button>
             )}
-            <button onClick={onClose} className="w-7 h-7 bg-slate-800 border border-slate-700 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors">
+            <button onClick={onClose} className="w-7 h-7 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors">
               <X size={13} />
             </button>
           </div>
@@ -140,7 +140,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
         {/* Score Hero */}
         <div className="px-5 pt-5 pb-4">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl p-4 flex items-center gap-5">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl p-4 flex items-center gap-5">
             <ScoreRing score={auditoria.ai_score} />
             <div className="flex-1">
               <div className="flex gap-2 mb-2 flex-wrap">
@@ -159,8 +159,8 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                   { label: 'Canal', value: 'WhatsApp' },
                 ].map(m => (
                   <div key={m.label}>
-                    <span className="text-[9px] text-slate-500 uppercase">{m.label}: </span>
-                    <span className="text-[10px] text-slate-300 font-medium">{m.value || '—'}</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">{m.label}: </span>
+                    <span className="text-[10px] text-slate-700 dark:text-slate-300 font-medium">{m.value || '—'}</span>
                   </div>
                 ))}
               </div>
@@ -170,13 +170,13 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
         {/* Tabs */}
         <div className="px-5 pb-2">
-          <div className="flex bg-slate-800 rounded-xl p-1 gap-1">
+          <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
             {([['overview', 'Análise IA', Brain], ['behavior', 'Comportamento', Activity], ['transcript', 'Transcrição', MessageSquare]] as const).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  tab === key ? 'bg-slate-700 text-slate-100' : 'text-slate-500 hover:text-slate-300'
+                  tab === key ? 'bg-slate-700 text-slate-100' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300'
                 }`}
               >
                 <Icon size={12} />
@@ -191,12 +191,12 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
             <div className="space-y-3 pt-2">
 
               {/* Resumo da IA */}
-              <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+              <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-4">
                 <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <Brain size={11} />
                   Resumo da IA
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed">{auditoria.ai_summary}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{auditoria.ai_summary}</p>
               </div>
 
               {/* Coaching — Próximo passo */}
@@ -220,8 +220,8 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               </div>
 
               {/* Score breakdown */}
-              <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Breakdown do Score</div>
+              <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Breakdown do Score</div>
                 <div className="space-y-2.5">
                   {(() => {
                     const s = auditoria.ai_score
@@ -236,7 +236,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     ]
                     return breakdown.map(item => (
                       <div key={item.label} className="flex items-center gap-2">
-                        <div className="w-[130px] text-[10px] text-slate-400 shrink-0">{item.label}</div>
+                        <div className="w-[130px] text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400 shrink-0">{item.label}</div>
                         <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-700 ${
@@ -263,7 +263,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                   {lines.map((line, i) => (
                     <div key={i} className={`flex gap-2 ${line.from === 'v' ? 'flex-row-reverse' : ''}`}>
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5 ${
-                        line.from === 'v' ? 'bg-blue-800 text-blue-200' : 'bg-slate-700 text-slate-300'
+                        line.from === 'v' ? 'bg-blue-800 text-blue-200' : 'bg-slate-700 text-slate-700 dark:text-slate-300'
                       }`}>
                         {line.from === 'v'
                           ? (auditoria.vendedor_name?.[0] || 'V')
@@ -271,13 +271,13 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                         }
                       </div>
                       <div className={`max-w-[80%] ${line.from === 'v' ? 'items-end' : 'items-start'} flex flex-col`}>
-                        <div className="text-[9px] text-slate-500 mb-1">
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500 mb-1">
                           {line.from === 'v' ? auditoria.vendedor_name : auditoria.cliente_name}
                         </div>
                         <div className={`text-xs px-3 py-2 rounded-xl leading-relaxed ${
                           line.from === 'v'
                             ? 'bg-blue-900/40 border border-blue-500/20 text-blue-100 rounded-tr-none'
-                            : 'bg-slate-700 border border-slate-600 text-slate-200 rounded-tl-none'
+                            : 'bg-slate-700 border border-slate-600 text-slate-800 dark:text-slate-200 rounded-tl-none'
                         }`}>
                           {line.msg}
                         </div>
@@ -288,10 +288,10 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               ) : (
                 <div className="py-12 text-center">
                   <MessageSquare size={28} className="text-slate-700 mx-auto mb-2" />
-                  <p className="text-xs text-slate-500">Transcrição não disponível</p>
-                  <div className="mt-3 bg-slate-800 rounded-xl p-3 text-left">
-                    <div className="text-[10px] text-slate-500 mb-1">Mensagem capturada:</div>
-                    <p className="text-xs text-slate-300">{auditoria.transcript}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Transcrição não disponível</p>
+                  <div className="mt-3 bg-slate-100 dark:bg-slate-800 rounded-xl p-3 text-left">
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mb-1">Mensagem capturada:</div>
+                    <p className="text-xs text-slate-700 dark:text-slate-300">{auditoria.transcript}</p>
                   </div>
                 </div>
               )}
@@ -308,9 +308,9 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                   { label: 'Confiança', score: auditoria.trust_score, icon: ThumbsUp },
                   { label: 'Probabilidade', score: auditoria.probability_to_close, icon: Activity },
                 ].map(kpi => (
-                  <div key={kpi.label} className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden">
-                    <kpi.icon size={14} className="text-slate-500 mb-1" />
-                    <div className="text-[10px] text-slate-400 font-medium mb-1">{kpi.label}</div>
+                  <div key={kpi.label} className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden">
+                    <kpi.icon size={14} className="text-slate-400 dark:text-slate-500 mb-1" />
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400 font-medium mb-1">{kpi.label}</div>
                     <div className={`text-lg font-black ${getScoreColor(kpi.score || 0)}`}>
                       {typeof kpi.score === 'number' ? kpi.score.toFixed(1) : '—'}
                     </div>
@@ -319,23 +319,23 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               </div>
 
               {/* Informações Qualitativas */}
-              <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+              <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-4">
                 <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                   <div>
-                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Estágio</div>
-                    <div className="text-xs text-slate-300 font-medium">{auditoria.buying_stage || '—'}</div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Estágio</div>
+                    <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{auditoria.buying_stage || '—'}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Poder de Decisão</div>
-                    <div className="text-xs text-slate-300 font-medium">{auditoria.decision_power || '—'}</div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Poder de Decisão</div>
+                    <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{auditoria.decision_power || '—'}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Sensibilidade a Preço</div>
-                    <div className="text-xs text-slate-300 font-medium">{auditoria.price_sensitivity || '—'}</div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Sensibilidade a Preço</div>
+                    <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{auditoria.price_sensitivity || '—'}</div>
                   </div>
                   <div>
-                    <div className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">Risco</div>
-                    <div className="text-xs text-slate-300 font-medium">{auditoria.risk_level || '—'}</div>
+                    <div className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Risco</div>
+                    <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{auditoria.risk_level || '—'}</div>
                   </div>
                 </div>
               </div>
@@ -347,7 +347,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">
                       <AlertTriangle size={11} /> Objeções Explícitas
                     </div>
-                    <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-slate-700 dark:text-slate-300 space-y-1">
                       {explicitObj.map((obj, i) => <li key={i}>{obj}</li>)}
                     </ul>
                   </div>
@@ -358,7 +358,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">
                       <AlertCircle size={11} /> Objeções Ocultas (Risco)
                     </div>
-                    <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-slate-700 dark:text-slate-300 space-y-1">
                       {hiddenObj.map((obj, i) => <li key={i}>{obj}</li>)}
                     </ul>
                   </div>
@@ -369,7 +369,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
                       <ThumbsUp size={11} /> Sinais Positivos
                     </div>
-                    <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-slate-700 dark:text-slate-300 space-y-1">
                       {positiveSig.map((sig, i) => <li key={i}>{sig}</li>)}
                     </ul>
                   </div>
@@ -383,7 +383,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     <MessageSquare size={11} />
                     Mensagem Sugerida (Copy Ready)
                   </div>
-                  <div className="bg-slate-950/50 rounded-lg p-3 text-xs text-blue-200/80 mb-3 border border-blue-500/20 font-medium italic">
+                  <div className="bg-slate-50 dark:bg-slate-50/50 dark:bg-slate-950/50 rounded-lg p-3 text-xs text-blue-200/80 mb-3 border border-blue-500/20 font-medium italic">
                     "{auditoria.copy_ready_message}"
                   </div>
                   <button
@@ -409,19 +409,19 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       {/* Confirm Modal */}
       {showConfirmClose && (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center gap-3 text-red-400 mb-3">
               <AlertTriangle size={24} />
               <h3 className="font-bold text-lg">Finalizar Atendimento?</h3>
             </div>
-            <p className="text-sm text-slate-400 mb-6">
+            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-6">
               Deseja realmente finalizar este atendimento? Novas mensagens do cliente criarão uma nova auditoria separada.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirmClose(false)}
                 disabled={isClosing}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>

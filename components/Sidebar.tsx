@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useTheme } from 'next-themes'
 import { supabase } from '@/lib/supabase'
 import { useAuditorias } from '@/hooks/useAuditorias'
 import { SearchModal } from '@/components/SearchModal'
 import {
   LayoutDashboard, FileSearch, MessageCircle,
-  Settings, Activity, LogOut, AlertTriangle, BarChart2, Menu, X, Search,
+  Settings, Activity, LogOut, AlertTriangle, BarChart2, Menu, X, Search, Sun, Moon
 } from 'lucide-react'
 
 export function Sidebar() {
@@ -17,10 +18,12 @@ export function Sidebar() {
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const { theme, setTheme } = useTheme()
   const { data } = useAuditorias()
 
   const criticalCount = data.filter(
-    a => a.ai_score < 5 || ['Negativo', 'Crítico'].includes(a.lead_sentiment)
+    a => a.status !== 'concluido' && (a.ai_score < 5 || ['Negativo', 'Crítico'].includes(a.lead_sentiment))
   ).length
 
   // Fecha drawer ao trocar de rota
@@ -46,6 +49,7 @@ export function Sidebar() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+    setMounted(true)
   }, [])
 
   const handleLogout = async () => {
@@ -65,30 +69,29 @@ export function Sidebar() {
     .toUpperCase()
     .slice(0, 2)
 
-  const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/auditorias', label: 'Auditorias', icon: FileSearch, badge: criticalCount },
     { href: '/relatorios', label: 'Relatórios', icon: BarChart2 },
     { href: '/whatsapp-setup', label: 'WhatsApp', icon: MessageCircle },
-    { href: '/settings', label: 'Configurações', icon: Settings },
+    { href: '/configuracoes', label: 'Configurações', icon: Settings },
   ]
 
   function NavContent({ onClose }: { onClose?: () => void }) {
     return (
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20">
               <Activity size={16} color="white" />
             </div>
             <div>
-              <div className="text-sm font-bold text-slate-50 leading-tight tracking-tight">SalesForce AI</div>
-              <div className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Auditor</div>
+              <div className="text-sm font-bold text-slate-800 dark:text-slate-900 dark:text-slate-50 leading-tight tracking-tight">SalesForce AI</div>
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">Auditor</div>
             </div>
           </div>
           {onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors">
+            <button onClick={onClose} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors">
               <X size={16} />
             </button>
           )}
@@ -118,7 +121,7 @@ export function Sidebar() {
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                   active
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
-                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                    : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800/50 hover:text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <Icon size={15} strokeWidth={active ? 2.5 : 2} />
@@ -139,7 +142,7 @@ export function Sidebar() {
         <div className="px-2 pb-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-500 hover:text-slate-300 hover:border-slate-600 transition-all group"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700/50 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:border-slate-600 transition-all group"
           >
             <Search size={13} />
             <span className="flex-1 text-xs text-left">Buscar...</span>
@@ -148,23 +151,32 @@ export function Sidebar() {
         </div>
 
         {/* User */}
-        <div className="p-2 border-t border-slate-800">
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/50 border border-slate-800/50">
+        <div className="p-2 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-50/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/50">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-inner">
               {userInitials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-bold text-slate-200 truncate leading-none mb-1">
+              <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate leading-none mb-1">
                 {displayName}
               </div>
-              <div className="text-[9px] text-slate-500 font-medium truncate uppercase tracking-tighter">
+              <div className="text-[9px] text-slate-400 dark:text-slate-500 font-medium truncate uppercase tracking-tighter">
                 {user?.email || '...'}
               </div>
             </div>
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+                className="p-1.5 rounded-md hover:bg-slate-100 dark:bg-slate-800/50 hover:text-slate-800 dark:text-slate-200 text-slate-400 dark:text-slate-500 transition-colors mr-1"
+              >
+                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
+            )}
             <button
               onClick={handleLogout}
               title="Sair"
-              className="p-1.5 rounded-md hover:bg-red-500/10 hover:text-red-400 text-slate-500 transition-colors"
+              className="p-1.5 rounded-md hover:bg-red-500/10 hover:text-red-400 text-slate-400 dark:text-slate-500 transition-colors"
             >
               <LogOut size={14} />
             </button>
@@ -177,12 +189,12 @@ export function Sidebar() {
   return (
     <>
       {/* ── Mobile top bar ── */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-40 h-14 bg-slate-900/95 backdrop-blur border-b border-slate-800 flex items-center justify-between px-4">
+      <header className="md:hidden fixed top-0 inset-x-0 z-40 h-14 bg-white dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center shadow-lg shadow-blue-600/20">
             <Activity size={13} color="white" />
           </div>
-          <span className="text-sm font-bold text-slate-50 tracking-tight">SalesForce AI</span>
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-50 tracking-tight">SalesForce AI</span>
         </div>
         <div className="flex items-center gap-2">
           {criticalCount > 0 && (
@@ -192,13 +204,13 @@ export function Sidebar() {
           )}
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors"
           >
             <Search size={17} />
           </button>
           <button
             onClick={() => setIsOpen(true)}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors"
           >
             <Menu size={18} />
           </button>
@@ -206,7 +218,7 @@ export function Sidebar() {
       </header>
 
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex w-[220px] min-w-[220px] bg-slate-900 border-r border-slate-800 flex-col h-screen sticky top-0">
+      <aside className="hidden md:flex w-[220px] min-w-[220px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col h-screen sticky top-0">
         <NavContent />
       </aside>
 
@@ -219,7 +231,7 @@ export function Sidebar() {
             onClick={() => setIsOpen(false)}
           />
           {/* Drawer */}
-          <aside className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col h-full animate-in slide-in-from-left duration-200">
+          <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full animate-in slide-in-from-left duration-200">
             <NavContent onClose={() => setIsOpen(false)} />
           </aside>
         </div>

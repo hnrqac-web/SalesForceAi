@@ -21,6 +21,13 @@ const PERIOD_LABELS: Record<Period, string> = {
 export default function DashboardPage() {
   const { data: allData, isLoading } = useAuditorias()
   const [period, setPeriod] = useState<Period>('7d')
+  const [ticketMedio, setTicketMedio] = useState(0)
+
+  // Carrega ticket médio do localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('@salesforce-ai:ticket-medio')
+    if (saved) setTicketMedio(Number(saved))
+  }, [])
 
   const data = useMemo(() => {
     if (period === 'all') return allData
@@ -36,7 +43,7 @@ export default function DashboardPage() {
   const critical = useMemo(() => data.filter(
     (a) => a.ai_score < 5 || ['Negativo', 'Crítico'].includes(a.lead_sentiment)
   ).length, [data])
-  const roi = useMemo(() => calcROI(critical), [critical])
+  const roi = useMemo(() => calcROI(critical, ticketMedio), [critical, ticketMedio])
 
   const avgProbability = useMemo(() => {
     const valid = data.filter(a => a.probability_to_close !== undefined)
@@ -151,11 +158,11 @@ export default function DashboardPage() {
       badge: true,
     },
     {
-      title: 'Estimativa de ROI',
+      title: 'Receita em Risco',
       value: roi,
-      sub: 'Valor recuperável de leads perdidos',
+      sub: ticketMedio === 0 ? 'Defina o Ticket Médio em Configurações' : 'Valor potencial de leads críticos',
       icon: DollarSign,
-      color: 'text-emerald-400',
+      color: 'text-amber-400',
     },
     {
       title: 'Probabilidade (Média)',
@@ -173,11 +180,11 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
-            <h1 className="text-lg md:text-xl font-semibold text-slate-50">Dashboard de Gestão</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Visão executiva das auditorias em tempo real</p>
+            <h1 className="text-lg md:text-xl font-semibold text-slate-900 dark:text-slate-50">Dashboard de Gestão</h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Visão executiva das auditorias em tempo real</p>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             {isLoading && <Loader2 size={14} className="text-blue-500 animate-spin mr-1" />}
@@ -188,7 +195,7 @@ export default function DashboardPage() {
                 className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all ${
                   period === key
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
                 }`}
               >
                 {label}
@@ -202,12 +209,12 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
           {isLoading && allData.length === 0 ? (
             [...Array(4)].map((_, i) => (
-              <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-4 animate-pulse h-28" />
+              <div key={i} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 animate-pulse h-28" />
             ))
           ) : (
             cards.map((card) => (
-              <div key={card.title} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-medium">
+              <div key={card.title} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 font-medium">
                   <card.icon size={12} className={card.color} />
                   {card.title}
                 </div>
@@ -217,10 +224,10 @@ export default function DashboardPage() {
                     {card.sub}
                   </span>
                 ) : (
-                  <div className="text-[10px] text-slate-500">{card.sub}</div>
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500">{card.sub}</div>
                 )}
                 {card.progress !== undefined && (
-                  <div className="mt-2 h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="mt-2 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${card.progressColor} transition-all duration-1000`}
                       style={{ width: `${card.progress}%` }}
@@ -232,16 +239,16 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
               <div className="text-sm font-semibold text-slate-100">Performance por Vendedor</div>
-              <div className="text-[11px] text-slate-500">Score médio de qualidade — {PERIOD_LABELS[period]}</div>
+              <div className="text-[11px] text-slate-400 dark:text-slate-500">Score médio de qualidade — {PERIOD_LABELS[period]}</div>
             </div>
           </div>
           <div className="h-[220px] w-full">
             {data.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-slate-500">
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">
                 Nenhum dado no período selecionado
               </div>
             ) : (
@@ -281,19 +288,19 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-medium">Distribuição de Sentimentos</div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 font-medium">Distribuição de Sentimentos</div>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { label: 'Positivo', count: data.filter(a => a.lead_sentiment === 'Positivo' || a.lead_sentiment === 'Interessado').length, color: 'text-emerald-400', bg: 'bg-emerald-500/5 border-emerald-500/10' },
-                { label: 'Neutro', count: data.filter(a => a.lead_sentiment === 'Neutro' || a.lead_sentiment === 'Indeciso').length, color: 'text-slate-400', bg: 'bg-slate-500/5 border-slate-500/10' },
+                { label: 'Neutro', count: data.filter(a => a.lead_sentiment === 'Neutro' || a.lead_sentiment === 'Indeciso').length, color: 'text-slate-400 dark:text-slate-500 dark:text-slate-400', bg: 'bg-slate-500/5 border-slate-500/10' },
                 { label: 'Negativo', count: data.filter(a => a.lead_sentiment === 'Negativo').length, color: 'text-amber-400', bg: 'bg-amber-500/5 border-amber-500/10' },
                 { label: 'Crítico', count: data.filter(a => a.lead_sentiment === 'Crítico').length, color: 'text-red-400', bg: 'bg-red-500/5 border-red-500/10' },
               ].map(s => (
                 <div key={s.label} className={`rounded-lg p-3 border ${s.bg}`}>
-                  <div className="text-[10px] text-slate-500">{s.label}</div>
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500">{s.label}</div>
                   <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
-                  <div className="mt-1.5 h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="mt-1.5 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-1000 ${
                         s.label === 'Positivo' ? 'bg-emerald-500' :
@@ -308,12 +315,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-medium">Top Vendedores</div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 font-medium">Top Vendedores</div>
             <div className="space-y-1">
               {topSellers.length > 0 ? (
                 topSellers.map((v, i) => (
-                  <div key={v.name} className={`flex items-center justify-between py-2.5 ${i < topSellers.length - 1 ? 'border-b border-slate-800/50' : ''}`}>
+                  <div key={v.name} className={`flex items-center justify-between py-2.5 ${i < topSellers.length - 1 ? 'border-b border-slate-200 dark:border-slate-800/50' : ''}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[8px] font-black text-white ${
                         i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-slate-400' : 'bg-amber-700'
@@ -324,40 +331,40 @@ export default function DashboardPage() {
                         {v.initials}
                       </div>
                       <div>
-                        <span className="text-xs text-slate-300 font-medium">{v.name}</span>
+                        <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{v.name}</span>
                         <div className="text-[9px] text-slate-600">{v.total} auditorias</div>
                       </div>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded border ${getScoreColor(v.score)} bg-slate-800 border-slate-700`}>
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded border ${getScoreColor(v.score)} bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700`}>
                       {v.score}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="text-xs text-slate-500 py-4 text-center">Nenhum vendedor encontrado</div>
+                <div className="text-xs text-slate-400 dark:text-slate-500 py-4 text-center">Nenhum vendedor encontrado</div>
               )}
             </div>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-medium flex items-center gap-1.5">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 font-medium flex items-center gap-1.5">
               <AlertCircle size={12} className="text-amber-400" />
               Principais Objeções
             </div>
             <div className="space-y-2">
               {topObjections.length > 0 ? (
                 topObjections.map(([obj, count], i) => (
-                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-800/40 border border-slate-800">
+                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
                     <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold bg-amber-500/10 text-amber-400 shrink-0">
                       {count}
                     </div>
-                    <div className="text-xs text-slate-300 font-medium leading-tight">
+                    <div className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-tight">
                       {obj}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-xs text-slate-500 py-4 text-center">Nenhuma objeção registrada no período</div>
+                <div className="text-xs text-slate-400 dark:text-slate-500 py-4 text-center">Nenhuma objeção registrada no período</div>
               )}
             </div>
           </div>

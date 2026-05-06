@@ -61,19 +61,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg shadow-blue-500/20">
             <Activity size={24} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-50">SalesForce AI Auditor</h1>
-          <p className="text-slate-400 text-sm mt-2">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">SalesForce AI Auditor</h1>
+          <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 text-sm mt-2">
             {isSignUp ? 'Crie sua conta gratuitamente' : 'Entre com suas credenciais para acessar o painel'}
           </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl">
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
               {error}
@@ -113,40 +113,40 @@ export default function LoginPage() {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-800"></div>
+              <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-slate-900 px-2 text-slate-500">Ou use seu e-mail</span>
+              <span className="bg-white dark:bg-slate-900 px-2 text-slate-400 dark:text-slate-500">Ou use seu e-mail</span>
             </div>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wider ml-1">E-mail</label>
+              <label className="text-[11px] font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">E-mail</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <input
                   type="email"
                   placeholder="gestor@empresa.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wider ml-1">Senha</label>
+              <label className="text-[11px] font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">Senha</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <input
                   type="password"
                   placeholder="••••••••"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
             </div>
@@ -175,8 +175,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-slate-800 text-center">
-            <p className="text-[11px] text-slate-500">
+          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 text-center">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
               {isSignUp ? 'Já tem uma conta?' : 'Não tem uma conta?'} {' '}
               <button
                 onClick={() => setIsSignUp(!isSignUp)}

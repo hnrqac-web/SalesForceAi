@@ -123,15 +123,15 @@ export default function WhatsAppSetupPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-50">WhatsApp Setup</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Conecte instâncias da Evolution API para capturar conversas comerciais</p>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">WhatsApp Setup</h1>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Conecte instâncias da Evolution API para capturar conversas comerciais</p>
         </div>
         <button 
           type="button"
           onClick={loadInstances}
-          className="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          className="p-2 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -147,20 +147,20 @@ export default function WhatsAppSetupPage() {
 
         {/* ... Restante da lista de instâncias ... */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3 text-sm font-semibold text-slate-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
               Status da Evolution API
-              <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${instances.length > 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-500 bg-slate-500/10 border-slate-500/30'}`}>
+              <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${instances.length > 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-400 dark:text-slate-500 bg-slate-500/10 border-slate-500/30'}`}>
                 {instances.length > 0 ? 'Online' : 'Vazio'}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-4">
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Instâncias</div>
-                <div className="text-xl font-bold text-slate-200">{instances.length}</div>
+              <div className="bg-slate-100 dark:bg-slate-800/50 rounded-lg p-3">
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold mb-1">Instâncias</div>
+                <div className="text-xl font-bold text-slate-800 dark:text-slate-200">{instances.length}</div>
               </div>
-              <div className="bg-slate-800/50 rounded-lg p-3">
-                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Ativas</div>
+              <div className="bg-slate-100 dark:bg-slate-800/50 rounded-lg p-3">
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold mb-1">Ativas</div>
                 <div className="text-xl font-bold text-emerald-400">
                   {instances.filter(i => (i.status === 'open' || i.connectionStatus === 'open')).length}
                 </div>
@@ -168,11 +168,11 @@ export default function WhatsAppSetupPage() {
             </div>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col items-center justify-center">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col items-center justify-center">
             {qrCode ? (
               <div className="text-center">
                 <img src={qrCode} className="w-32 h-32 mx-auto rounded-lg border-4 border-white mb-2" />
-                <button onClick={() => setQrCode(null)} className="text-[10px] text-slate-500 underline">Fechar</button>
+                <button onClick={() => setQrCode(null)} className="text-[10px] text-slate-400 dark:text-slate-500 underline">Fechar</button>
               </div>
             ) : (
               <button 
@@ -193,14 +193,14 @@ export default function WhatsAppSetupPage() {
             const isOpen = inst.status === 'open' || inst.connectionStatus === 'open'
             const name = inst.name || inst.instanceName
             return (
-              <div key={name} className="bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 flex items-center justify-between group">
+              <div key={name} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 flex items-center justify-between group">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-                    {inst.profilePicUrl ? <img src={inst.profilePicUrl} className="w-full h-full object-cover" /> : <Smartphone className="text-slate-500" size={20} />}
+                  <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden">
+                    {inst.profilePicUrl ? <img src={inst.profilePicUrl} className="w-full h-full object-cover" /> : <Smartphone className="text-slate-400 dark:text-slate-500" size={20} />}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-50">{inst.profileName || name}</div>
-                    <div className="text-[11px] text-slate-500">{formatPhone(inst.ownerJid || inst.owner || inst.number)}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-slate-50">{inst.profileName || name}</div>
+                    <div className="text-[11px] text-slate-400 dark:text-slate-500">{formatPhone(inst.ownerJid || inst.owner || inst.number)}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -210,7 +210,7 @@ export default function WhatsAppSetupPage() {
                       setSelectedInstance(inst);
                       setWebhookStatus(null);
                     }}
-                    className="p-2.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 hover:border-blue-500/40 rounded-xl cursor-pointer transition-all"
+                    className="p-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:border-blue-500/40 rounded-xl cursor-pointer transition-all"
                     title="Configurações e Detalhes"
                   >
                     <Info size={16} />
@@ -218,7 +218,7 @@ export default function WhatsAppSetupPage() {
                   <button 
                     type="button"
                     onClick={() => handleDelete(name)}
-                    className="p-2.5 bg-slate-800/50 border border-slate-800 text-slate-600 hover:text-red-400 hover:border-red-500/30 rounded-xl cursor-pointer transition-all"
+                    className="p-2.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-slate-600 hover:text-red-400 hover:border-red-500/30 rounded-xl cursor-pointer transition-all"
                     title="Excluir instância"
                   >
                     <Trash2 size={16} />
@@ -232,10 +232,10 @@ export default function WhatsAppSetupPage() {
 
       {selectedInstance && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="font-bold text-slate-200">Configurações da Instância</h3>
-              <button onClick={() => setSelectedInstance(null)} className="text-slate-500 hover:text-white cursor-pointer"><X size={20} /></button>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+              <h3 className="font-bold text-slate-800 dark:text-slate-200">Configurações da Instância</h3>
+              <button onClick={() => setSelectedInstance(null)} className="text-slate-400 dark:text-slate-500 hover:text-white cursor-pointer"><X size={20} /></button>
             </div>
             
             <div className="p-6 space-y-6">
@@ -254,7 +254,7 @@ export default function WhatsAppSetupPage() {
                     placeholder="https://seu-n8n.com/webhook/..."
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 outline-none focus:border-blue-500 transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-all"
                   />
                   <button 
                     type="button"
@@ -271,11 +271,11 @@ export default function WhatsAppSetupPage() {
 
               <div className="space-y-2">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-slate-500 font-bold uppercase">Nome da Instância</span>
-                  <span className="text-slate-300 font-mono">{selectedInstance.name || selectedInstance.instanceName}</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-bold uppercase">Nome da Instância</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-mono">{selectedInstance.name || selectedInstance.instanceName}</span>
                 </div>
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-slate-500 font-bold uppercase">Status</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-bold uppercase">Status</span>
                   <span className="text-emerald-400 font-bold">{selectedInstance.status || selectedInstance.connectionStatus}</span>
                 </div>
               </div>
@@ -283,7 +283,7 @@ export default function WhatsAppSetupPage() {
               <button 
                 type="button"
                 onClick={() => setSelectedInstance(null)}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-3 rounded-xl cursor-pointer border border-slate-700"
+                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-3 rounded-xl cursor-pointer border border-slate-300 dark:border-slate-700"
               >
                 Fechar
               </button>

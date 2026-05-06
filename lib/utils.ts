@@ -38,12 +38,12 @@ export function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('pt-BR')
 }
 
-export function calcROI(criticalCount: number): string {
+export function calcROI(criticalCount: number, ticketMedio: number = 0): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     maximumFractionDigits: 0,
-  }).format(criticalCount * 1200)
+  }).format(criticalCount * ticketMedio)
 }
 
 export function getInitials(name: string): string {
