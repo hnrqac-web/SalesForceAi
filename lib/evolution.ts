@@ -45,27 +45,30 @@ export const evolutionService = {
       
       console.log('[Evolution] Instâncias recebidas:', list);
 
-      return list.map((inst: any) => {
-        // Tenta encontrar o nome da instância em vários caminhos
+      const processedInstances = await Promise.all(list.map(async (inst: any) => {
+        // Tenta encontrar o nome da instância
         const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name;
-        
-        // Tenta encontrar o status de conexão
         const connectionStatus = inst.status || inst.connectionStatus || inst.instance?.status || inst.instance?.connectionStatus;
 
-        // Tenta encontrar o owner (número do WhatsApp) em vários caminhos da v2
-        const owner = inst.owner || 
-                      inst.instance?.owner || 
-                      inst.data?.owner || 
-                      inst.connection?.owner || 
-                      inst.instance?.data?.owner ||
-                      null;
+        // Caminhos padrão da v2
+        let owner = inst.owner || inst.instance?.owner || inst.data?.owner || inst.connection?.owner || inst.instance?.data?.owner || null;
+        let profileName = inst.profileName || inst.instance?.profileName || inst.data?.profileName || inst.instance?.data?.profileName || null;
 
-        // Tenta encontrar o nome do perfil
-        const profileName = inst.profileName || 
-                            inst.instance?.profileName || 
-                            inst.data?.profileName || 
-                            inst.instance?.data?.profileName ||
-                            null;
+        // SE NÃO ACHOU O OWNER, tenta buscar no connectionState (Deep Check)
+        if (!owner && name && connectionStatus === 'open') {
+          try {
+            console.log(`[Evolution] Deep check para instância: ${name}`);
+            const stateResp = await fetch(`/api/evolution?endpoint=/instance/connectionState/${name}`, { method: 'GET' });
+            const stateData = await stateResp.json();
+            
+            // Na v2, o JID costuma estar em instance.owner ou instance.user.id
+            const deepInstance = stateData?.instance || stateData?.data?.instance;
+            owner = deepInstance?.owner || deepInstance?.user?.id || stateData?.user?.id || null;
+            profileName = deepInstance?.profileName || deepInstance?.pushname || null;
+          } catch (e) {
+            console.error(`Erro no deep check de ${name}:`, e);
+          }
+        }
 
         return {
           name,
@@ -73,7 +76,9 @@ export const evolutionService = {
           owner,
           profileName
         };
-      });
+      }));
+
+      return processedInstances;
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
       return [];
