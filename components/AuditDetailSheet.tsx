@@ -56,9 +56,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
     setIsClosing(true)
     try {
       const { error } = await supabase
-        .from('auditorias')
-        .update({ status: 'concluido' })
-        .eq('id', auditoria.id)
+        .rpc('close_auditoria', { p_id: auditoria.id })
       
       if (error) throw error
       onClose()

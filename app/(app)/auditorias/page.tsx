@@ -19,6 +19,7 @@ export default function AuditoriasPage() {
   const [filterVendedor, setFilterVendedor] = useState('')
   const [filterData, setFilterData] = useState('')
   const [filterCliente, setFilterCliente] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'aberto' | 'concluido' | 'todos'>('aberto')
   const [filterScore, setFilterScore] = useState<'all' | 'alta' | 'atencao' | 'critico'>('all')
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
@@ -40,6 +41,11 @@ export default function AuditoriasPage() {
       if (filterScore === 'alta' && a.ai_score < 8) return false
       if (filterScore === 'atencao' && (a.ai_score < 6 || a.ai_score >= 8)) return false
       if (filterScore === 'critico' && a.ai_score >= 6) return false
+      
+      const isConcluido = a.status === 'concluido'
+      if (filterStatus === 'aberto' && isConcluido) return false
+      if (filterStatus === 'concluido' && !isConcluido) return false
+
       return true
     })
     return [...f].sort((a, b) => {
@@ -48,18 +54,19 @@ export default function AuditoriasPage() {
       const cmp = typeof av === 'number' ? av - (bv as number) : String(av).localeCompare(String(bv))
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [data, filterVendedor, filterData, filterCliente, filterScore, sortKey, sortDir])
+  }, [data, filterVendedor, filterData, filterCliente, filterScore, filterStatus, sortKey, sortDir])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  const hasFilters = filterVendedor || filterData || filterCliente || filterScore !== 'all'
+  const hasFilters = filterVendedor || filterData || filterCliente || filterScore !== 'all' || filterStatus !== 'aberto'
 
   const clearFilters = () => {
     setFilterVendedor('')
     setFilterData('')
     setFilterCliente('')
     setFilterScore('all')
+    setFilterStatus('aberto')
     setPage(1)
   }
 
@@ -111,6 +118,22 @@ export default function AuditoriasPage() {
                 <option value="">Todos os vendedores</option>
                 {vendedores.map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
+            </div>
+
+            {/* Status */}
+            <div className="relative group">
+              <select
+                className="appearance-none w-[140px] bg-slate-800 border border-slate-700 rounded-xl text-slate-300 pl-4 pr-8 py-2 text-xs outline-none focus:border-blue-500 transition-all cursor-pointer"
+                value={filterStatus}
+                onChange={(e) => handleFilter(setFilterStatus)(e.target.value as any)}
+              >
+                <option value="aberto">Em Aberto</option>
+                <option value="concluido">Encerrados</option>
+                <option value="todos">Todos os Status</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                <ChevronDown size={14} />
+              </div>
             </div>
 
             {/* Data */}
