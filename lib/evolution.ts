@@ -150,7 +150,7 @@ export const evolutionService = {
       console.error('[FRONTEND] Erro Fatal:', error);
       throw error;
     }
-  }
+  },
   /**
    * Busca mensagens de um chat (histórico)
    */

@@ -3,10 +3,9 @@
 import { useState } from 'react'
 import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, extractTranscriptLines } from '@/lib/utils'
-import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle, Loader2, Lock } from 'lucide-react'
+import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle, Loader2, Lock, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { RefreshCw, X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle, Loader2, Lock } from 'lucide-react'
 import { evolutionService } from '@/lib/evolution'
 
 interface Props {
