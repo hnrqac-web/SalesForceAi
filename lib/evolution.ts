@@ -156,7 +156,8 @@ export const evolutionService = {
    */
   async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
     try {
-      const response = await fetch(`/api/evolution?endpoint=/chat/fetchMessages/${instanceName}?number=${remoteJid}&count=${count}`, {
+      const endpoint = encodeURIComponent(`/chat/fetchMessages/${instanceName}?number=${remoteJid}&count=${count}`);
+      const response = await fetch(`/api/evolution?endpoint=${endpoint}`, {
         method: 'GET',
       });
       const data = await response.json();
