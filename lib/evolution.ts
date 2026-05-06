@@ -41,8 +41,14 @@ export const evolutionService = {
         method: 'GET',
       });
       const data = await response.json();
-      if (!response.ok) throw data;
-      return normalizeInstancesResponse(data);
+      const list = Array.isArray(data) ? data : (data?.data || data?.response || []);
+      
+      // Mapeia para um formato padrão, extraindo o owner se disponível para bater com o webhook
+      return list.map((inst: any) => ({
+        name: inst.instanceName || inst.name,
+        connectionStatus: inst.status || inst.connectionStatus,
+        owner: inst.owner || inst.instance?.owner || null
+      }));
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
       return [];

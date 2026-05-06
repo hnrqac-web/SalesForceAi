@@ -120,45 +120,24 @@ export default function AuditoriasPage() {
           <div className="flex gap-2">
             <button 
               onClick={async () => {
-                const toastId = toast.loading('Sincronizando chats recentes...')
+                const toastId = toast.loading('Sincronizando chats recentes via servidor...')
                 try {
-                  const instances = await evolutionService.getInstances()
-                  let totalImported = 0
+                  const response = await fetch('/api/sync', { method: 'POST' })
+                  const result = await response.json()
                   
-                  // Filtra apenas instâncias conectadas para evitar timeouts
-                  const activeInstances = instances.filter((inst: any) => inst.connectionStatus === 'open')
+                  if (!response.ok) throw new Error(result.error || 'Erro no servidor')
                   
-                  for (const inst of activeInstances) {
-                    const chats = await evolutionService.findChats(inst.name)
-                    // Pega apenas os 10 chats mais recentes para não travar
-                    const recentChats = chats.slice(0, 10)
-                    
-                    await Promise.all(recentChats.map(async (chat: any) => {
-                      const jid = chat.id || chat.remoteJid
-                      const name = chat.name || chat.pushName || jid.split('@')[0]
-                      
-                      const { error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
-                        p_cliente_jid: jid,
-                        p_cliente_name: name,
-                        p_vendedor_name: inst.name,
-                        p_message: 'Sincronização manual',
-                        p_from_me: true
-                      })
-                      if (!rpcError) totalImported++
-                    }))
-                  }
-                  
-                  toast.success(`Sincronização concluída! ${totalImported} chats verificados.`, { id: toastId })
+                  toast.success(`Sincronização concluída! ${result.imported} chats processados.`, { id: toastId })
                   refetch()
-                } catch (err) {
+                } catch (err: any) {
                   console.error('Erro no Sync:', err)
-                  toast.error('Erro ao sincronizar. Tente novamente.', { id: toastId })
+                  toast.error(`Erro: ${err.message}`, { id: toastId })
                 }
               }} 
-              className="text-[10px] bg-slate-600/10 text-slate-400 border border-slate-500/20 px-2 py-1 rounded-lg hover:bg-slate-600/20 transition-colors font-medium flex items-center gap-1.5"
+              className="text-[10px] bg-blue-600/10 text-blue-500 border border-blue-500/20 px-2 py-1 rounded-lg hover:bg-blue-600/20 transition-colors font-medium flex items-center gap-1.5"
             >
-              <Search size={12} />
-              SINCRONIZAR CHATS
+              <Loader2 size={12} className={isLoading ? 'animate-spin' : ''} />
+              SINCRONIZAR TUDO
             </button>
             <button 
               onClick={() => refetch()} 
