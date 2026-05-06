@@ -225,7 +225,7 @@ export default function AuditoriasPage() {
                           <td className="px-6 py-4">
                             <div className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
                               {a.cliente_name || '—'}
-                              {a.status === 'concluido' && <Lock size={10} className="text-slate-500" title="Atendimento Concluído" />}
+                              {a.status === 'concluido' && <span title="Atendimento Concluído"><Lock size={10} className="text-slate-500" /></span>}
                             </div>
                             <div className="text-[10px] text-slate-600 mt-0.5">WhatsApp Chat</div>
                           </td>
