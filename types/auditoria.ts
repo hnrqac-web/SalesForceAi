@@ -5,6 +5,7 @@ export type Auditoria = {
   cliente_name: string
   cliente_jid?: string
   transcript: string
+  transcript_completo?: string
   ai_score: number
   ai_summary: string
   next_step_suggestion: string

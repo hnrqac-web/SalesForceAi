@@ -141,14 +141,16 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
         50
       )
 
-      const messages = response?.messages || []
-      if (!Array.isArray(messages) || messages.length === 0) {
+      // Na v2, a resposta é um array direto de mensagens
+      const messages = Array.isArray(response) ? response : (response?.messages || [])
+      
+      if (messages.length === 0) {
         toast.info('Chat localizado, mas nenhuma mensagem foi encontrada.')
         return
       }
 
       // 3. Formata o novo transcript
-      const formattedTranscript = messages
+      const formattedTranscript = [...messages]
         .reverse()
         .map((m: any) => {
           const fromMe = m.key?.fromMe
@@ -156,6 +158,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                        m.message?.extendedTextMessage?.text || 
                        m.message?.imageMessage?.caption || 
                        m.message?.videoMessage?.caption ||
+                       m.content ||
                        ' (Mídia)'
           return `${fromMe ? 'Vendedor' : 'Cliente'}: ${text}`
         })
@@ -199,7 +202,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const hiddenObj = safeArray(auditoria.hidden_objections)
   const positiveSig = safeArray(auditoria.positive_signals)
 
-  const lines = extractTranscriptLines(auditoria.transcript)
+  const lines = extractTranscriptLines(auditoria.transcript_completo || auditoria.transcript)
   const status = getStatus(auditoria.ai_score)
   const statusCls = getStatusColor(auditoria.ai_score)
   const sentimentCls = getSentimentColor(auditoria.lead_sentiment)
