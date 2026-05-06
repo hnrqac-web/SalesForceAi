@@ -12,22 +12,10 @@ function pickFirstString(...values: unknown[]) {
   return null
 }
 
-function extractSellerName(body: any, fromMe: boolean) {
+function extractSellerName(body: any) {
   const instance = body?.instance
   const instanceName = typeof instance === 'string' ? instance : (instance?.name || instance?.instanceName)
-  const nestedInstance = typeof instance === 'object' ? instance?.instance : null
-  const dataInstance = typeof body?.data?.instance === 'object' ? body.data.instance : null
-
-  return pickFirstString(
-    instanceName,
-    instance?.profileName,
-    nestedInstance?.profileName,
-    dataInstance?.profileName,
-    instance?.pushName,
-    nestedInstance?.pushName,
-    body?.sender?.profileName,
-    fromMe ? body?.data?.pushName : null,
-  ) || 'Vendedor não identificado'
+  return instanceName || 'Vendedor não identificado'
 }
 
 serve(async (req) => {
@@ -45,7 +33,7 @@ serve(async (req) => {
     const fromMe = body.data?.key?.fromMe || false
     const remoteJid = body.data?.key?.remoteJid || ''
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido'
-    const vendedorNome = extractSellerName(body, fromMe)
+    const vendedorNome = extractSellerName(body)
     // Se for do vendedor, não usamos o pushName (que seria o nome do próprio vendedor) como nome do cliente
     const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId)
 
