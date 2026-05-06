@@ -3,6 +3,7 @@ export type Auditoria = {
   created_at: string
   vendedor_name: string
   cliente_name: string
+  cliente_jid?: string
   transcript: string
   ai_score: number
   ai_summary: string

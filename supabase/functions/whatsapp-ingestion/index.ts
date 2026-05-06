@@ -44,11 +44,12 @@ serve(async (req) => {
     const remoteJid = body.data?.key?.remoteJid || ''
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido'
     const vendedorNome = extractSellerName(body, fromMe)
-    const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId)
+    const clienteNome = (body.data?.pushName || clienteId)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     const { data: rpcData, error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
+      p_cliente_jid: remoteJid,
       p_cliente_name: clienteNome,
       p_vendedor_name: vendedorNome,
       p_message: message,
