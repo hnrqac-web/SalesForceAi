@@ -35,25 +35,45 @@ serve(async (req) => {
       return new Response(JSON.stringify({ status: 'ignored', event: eventName }), { status: 200 })
     }
 
-    const message = body.data?.message?.conversation || 
-                    body.data?.message?.extendedTextMessage?.text || 
-                    body.data?.message?.imageMessage?.caption ||
-                    body.data?.message?.videoMessage?.caption ||
-                    body.data?.message?.text || 
-                    body.data?.text ||
-                    body.data?.content ||
-                    body.data?.message?.content ||
-                    ''
-    if (!message) return new Response(JSON.stringify({ status: 'no_message' }), { status: 200 })
+    const data = body.data
+    const messageObj = data?.message
+    
+    // Log para depuração de eventos recebidos
+    console.log(`[Webhook] Evento: ${eventName}, de: ${data?.key?.remoteJid}, fromMe: ${data?.key?.fromMe}`)
 
-    const fromMe = body.data?.key?.fromMe || body.data?.fromMe || false
-    const remoteJid = body.data?.key?.remoteJid || body.data?.remoteJid || ''
+    const message = messageObj?.conversation || 
+                    messageObj?.extendedTextMessage?.text || 
+                    messageObj?.imageMessage?.caption ||
+                    messageObj?.videoMessage?.caption ||
+                    messageObj?.audioMessage?.caption ||
+                    messageObj?.documentMessage?.caption ||
+                    messageObj?.text || 
+                    data?.text ||
+                    data?.content ||
+                    (messageObj?.pollCreationMessage ? 'Enquete: ' + messageObj.pollCreationMessage.name : '') ||
+                    (messageObj?.locationMessage ? '📍 Localização enviada' : '') ||
+                    (messageObj?.contactMessage ? '👤 Contato compartilhado' : '') ||
+                    (messageObj?.audioMessage ? '🎤 Mensagem de voz' : '') ||
+                    ''
+
+    if (!message && eventName !== 'send_message') {
+      console.log('[Webhook] Mensagem vazia ignorada')
+      return new Response(JSON.stringify({ status: 'no_message' }), { status: 200 })
+    }
+
+    const fromMe = data?.key?.fromMe || data?.fromMe || false
+    const remoteJid = data?.key?.remoteJid || data?.remoteJid || ''
+    
+    if (!remoteJid) {
+       console.log('[Webhook] JID ausente ignorado')
+       return new Response(JSON.stringify({ status: 'no_jid' }), { status: 200 })
+    }
+
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido'
     const vendedorNome = extractSellerName(body)
     
-    // Se for o vendedor iniciando, não teremos o pushName do cliente.
-    // Usamos o ID (número) como nome temporário se não houver nome.
-    const clienteNome = (fromMe ? '' : body.data?.pushName) || clienteId
+    // Se for o vendedor iniciando, não teremos o pushName do cliente no webhook
+    const clienteNome = (fromMe ? '' : data?.pushName) || clienteId
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
@@ -61,7 +81,7 @@ serve(async (req) => {
       p_cliente_jid: remoteJid,
       p_cliente_name: clienteNome,
       p_vendedor_name: vendedorNome,
-      p_message: message,
+      p_message: message || (fromMe ? 'Mensagem enviada pelo vendedor' : 'Mensagem recebida'),
       p_from_me: fromMe
     })
 
