@@ -47,6 +47,22 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const [tab, setTab] = useState<'overview' | 'transcript' | 'behavior'>('overview')
 
   if (!auditoria) return null
+  
+  const safeArray = (val: any): string[] => {
+    if (!val) return []
+    let arr = val
+    if (typeof val === 'string') {
+      try { arr = JSON.parse(val) } catch { return [] }
+    }
+    if (Array.isArray(arr)) {
+      return arr.map(item => typeof item === 'string' ? item : JSON.stringify(item))
+    }
+    return []
+  }
+
+  const explicitObj = safeArray(auditoria.explicit_objections)
+  const hiddenObj = safeArray(auditoria.hidden_objections)
+  const positiveSig = safeArray(auditoria.positive_signals)
 
   const lines = extractTranscriptLines(auditoria.transcript)
   const status = getStatus(auditoria.ai_score)
@@ -253,7 +269,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     <kpi.icon size={14} className="text-slate-500 mb-1" />
                     <div className="text-[10px] text-slate-400 font-medium mb-1">{kpi.label}</div>
                     <div className={`text-lg font-black ${getScoreColor(kpi.score || 0)}`}>
-                      {kpi.score !== undefined ? kpi.score.toFixed(1) : '—'}
+                      {typeof kpi.score === 'number' ? kpi.score.toFixed(1) : '—'}
                     </div>
                   </div>
                 ))}
@@ -283,35 +299,35 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
               {/* Objeções e Sinais */}
               <div className="grid grid-cols-1 gap-3">
-                {auditoria.explicit_objections && auditoria.explicit_objections.length > 0 && (
+                {explicitObj.length > 0 && (
                   <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">
                       <AlertTriangle size={11} /> Objeções Explícitas
                     </div>
                     <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
-                      {auditoria.explicit_objections.map((obj, i) => <li key={i}>{obj}</li>)}
+                      {explicitObj.map((obj, i) => <li key={i}>{obj}</li>)}
                     </ul>
                   </div>
                 )}
                 
-                {auditoria.hidden_objections && auditoria.hidden_objections.length > 0 && (
+                {hiddenObj.length > 0 && (
                   <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">
                       <AlertCircle size={11} /> Objeções Ocultas (Risco)
                     </div>
                     <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
-                      {auditoria.hidden_objections.map((obj, i) => <li key={i}>{obj}</li>)}
+                      {hiddenObj.map((obj, i) => <li key={i}>{obj}</li>)}
                     </ul>
                   </div>
                 )}
                 
-                {auditoria.positive_signals && auditoria.positive_signals.length > 0 && (
+                {positiveSig.length > 0 && (
                   <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">
                       <ThumbsUp size={11} /> Sinais Positivos
                     </div>
                     <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
-                      {auditoria.positive_signals.map((sig, i) => <li key={i}>{sig}</li>)}
+                      {positiveSig.map((sig, i) => <li key={i}>{sig}</li>)}
                     </ul>
                   </div>
                 )}
