@@ -1,136 +1,141 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
 
-/**
- * Proxy API Robusto para Evolution API
- */
+function getEvolutionConfig() {
+  const rawUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL
+  const apiKey = process.env.EVOLUTION_API_KEY
+
+  if (!rawUrl || !apiKey) {
+    return {
+      error: NextResponse.json(
+        { error: 'Configurações da Evolution API ausentes. Defina NEXT_PUBLIC_EVOLUTION_URL e EVOLUTION_API_KEY.' },
+        { status: 500 }
+      ),
+    }
+  }
+
+  return {
+    apiKey,
+    baseUrl: rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl,
+  }
+}
+
+function normalizeEndpoint(endpoint?: string | null) {
+  if (!endpoint?.trim()) return null
+  return endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+}
+
+async function parseResponse(response: Response) {
+  const contentType = response.headers.get('content-type') || ''
+
+  if (contentType.includes('application/json')) {
+    return response.json()
+  }
+
+  const text = await response.text()
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    return { message: text || response.statusText }
+  }
+}
+
+async function proxyRequest(url: string, init: RequestInit) {
+  const response = await fetch(url, init)
+  const data = await parseResponse(response)
+
+  if (!response.ok) {
+    console.error('[Evolution Proxy] Erro da API externa:', data)
+    return NextResponse.json(
+      {
+        error: 'Erro na Evolution API',
+        details: data,
+        status: response.status,
+      },
+      { status: response.status }
+    )
+  }
+
+  return NextResponse.json(data)
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { endpoint, method, body } = await request.json();
-    
-    const rawUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL;
-    const apiKey = process.env.EVOLUTION_API_KEY;
+    const { endpoint, method, body } = await request.json()
+    const config = getEvolutionConfig()
+    if ('error' in config) return config.error
 
-    if (!rawUrl || !apiKey) {
-      return NextResponse.json({ error: 'Configurações da Evolution API (URL ou API_KEY) ausentes na Vercel.' }, { status: 500 });
+    const cleanEndpoint = normalizeEndpoint(endpoint)
+    if (!cleanEndpoint) {
+      return NextResponse.json({ error: 'Endpoint ausente' }, { status: 400 })
     }
 
-    const baseUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const fullUrl = `${baseUrl}${cleanEndpoint}`;
+    const fullUrl = `${config.baseUrl}${cleanEndpoint}`
+    console.log(`[Evolution Proxy] Chamando: ${method || 'POST'} ${fullUrl}`)
 
-    console.log(`[Evolution Proxy] Chamando: ${method} ${fullUrl}`);
-
-    const response = await fetch(fullUrl, {
+    return proxyRequest(fullUrl, {
       method: method || 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': apiKey,
+        apikey: config.apiKey,
       },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    let data;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { message: text };
-      }
-    }
-
-    if (!response.ok) {
-      console.error('[Evolution Proxy] Erro da API Externa:', data);
-      return NextResponse.json({ 
-        error: 'Erro na Evolution API', 
-        details: data,
-        status: response.status 
-      }, { status: response.status });
-    }
-
-    return NextResponse.json(data);
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
   } catch (error: any) {
-    console.error('[Evolution Proxy] Erro Fatal:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[Evolution Proxy] Erro fatal:', error)
+    return NextResponse.json({ error: error.message || 'Erro interno no proxy da Evolution API' }, { status: 500 })
   }
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const endpoint = searchParams.get('endpoint');
-  const rawUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL;
-  const apiKey = process.env.EVOLUTION_API_KEY;
+  const { searchParams } = new URL(request.url)
+  const config = getEvolutionConfig()
+  if ('error' in config) return config.error
 
-  if (!endpoint) return NextResponse.json({ error: 'Endpoint ausente' }, { status: 400 });
-  if (!rawUrl || !apiKey) return NextResponse.json({ error: 'Configurações ausentes' }, { status: 500 });
+  const cleanEndpoint = normalizeEndpoint(searchParams.get('endpoint'))
+  if (!cleanEndpoint) {
+    return NextResponse.json({ error: 'Endpoint ausente' }, { status: 400 })
+  }
 
-  const baseUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  
-  // Constrói a URL final incluindo todos os outros parâmetros de busca
-  const url = new URL(`${baseUrl}${cleanEndpoint}`);
+  const url = new URL(`${config.baseUrl}${cleanEndpoint}`)
   searchParams.forEach((value, key) => {
     if (key !== 'endpoint') {
-      url.searchParams.set(key, value);
+      url.searchParams.set(key, value)
     }
-  });
+  })
 
   try {
-    const response = await fetch(url.toString(), {
+    return proxyRequest(url.toString(), {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
-    });
-
-    let data;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { message: text };
-      }
-    }
-
-    if (!response.ok) {
-      return NextResponse.json({ 
-        error: 'Erro na Evolution API', 
-        details: data,
-        status: response.status 
-      }, { status: response.status });
-    }
-
-    return NextResponse.json(data);
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: config.apiKey,
+      },
+    })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Erro interno no proxy da Evolution API' }, { status: 500 })
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const endpoint = searchParams.get('endpoint');
-  const rawUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL;
-  const apiKey = process.env.EVOLUTION_API_KEY;
+  const { searchParams } = new URL(request.url)
+  const config = getEvolutionConfig()
+  if ('error' in config) return config.error
 
-  if (!endpoint) return NextResponse.json({ error: 'Endpoint ausente' }, { status: 400 });
-  if (!rawUrl || !apiKey) return NextResponse.json({ error: 'Configurações ausentes' }, { status: 500 });
-
-  const baseUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const cleanEndpoint = normalizeEndpoint(searchParams.get('endpoint'))
+  if (!cleanEndpoint) {
+    return NextResponse.json({ error: 'Endpoint ausente' }, { status: 400 })
+  }
 
   try {
-    const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+    return proxyRequest(`${config.baseUrl}${cleanEndpoint}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
-    });
-    return NextResponse.json({ success: response.ok }, { status: response.status });
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: config.apiKey,
+      },
+    })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Erro interno no proxy da Evolution API' }, { status: 500 })
   }
 }

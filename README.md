@@ -30,6 +30,9 @@ Crie um arquivo `.env` na raiz do projeto (use o `.env.example` como base):
 ```env
 NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon_do_supabase
+SUPABASE_SERVICE_ROLE_KEY=sua_service_role_do_supabase
+NEXT_PUBLIC_EVOLUTION_URL=sua_url_da_evolution
+EVOLUTION_API_KEY=sua_api_key_da_evolution
 ```
 
 ### 4. Configurar o Supabase
@@ -61,7 +64,7 @@ Tabela: `auditorias`
 
 1. Suba seu código para o GitHub.
 2. Conecte o repositório na [Vercel](https://vercel.com).
-3. Adicione as variáveis de ambiente (`NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+3. Adicione as variáveis de ambiente `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_EVOLUTION_URL` e `EVOLUTION_API_KEY`.
 4. Clique em **Deploy**.
 
 ## 🔮 Próximos Passos Recomendados

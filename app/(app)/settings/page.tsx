@@ -48,7 +48,7 @@ export default function SettingsPage() {
     const evolutionUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL
     if (evolutionUrl) {
       try {
-        const res = await fetch('/api/evolution?path=instance/fetchInstances')
+        const res = await fetch('/api/evolution?endpoint=/instance/fetchInstances')
         setIntegrationStatus(prev => ({ ...prev, evolution: res.ok ? 'ok' : 'error' }))
       } catch {
         setIntegrationStatus(prev => ({ ...prev, evolution: 'error' }))
