@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useAuditorias } from '@/hooks/useAuditorias'
+import { useSellerNames } from '@/hooks/useSellerNames'
 import { getAverageScore, getScoreColor, getSentimentColor, getInitials, formatDate } from '@/lib/utils'
 import { Auditoria } from '@/types/auditoria'
 import {
@@ -17,11 +18,11 @@ import {
 type Period = '7d' | '30d' | '90d' | 'all'
 const PAGE_SIZE = 10
 
-function exportToCSV(rows: Auditoria[]) {
+function exportToCSV(rows: Auditoria[], getSellerDisplayName: (name?: string | null) => string) {
   const headers = ['Data', 'Vendedor', 'Cliente', 'Score IA', 'Sentimento', 'Resumo IA', 'Próximo Passo']
   const lines = rows.map(r => [
     formatDate(r.created_at),
-    r.vendedor_name,
+    getSellerDisplayName(r.vendedor_name),
     r.cliente_name,
     r.ai_score,
     r.lead_sentiment,
@@ -50,6 +51,7 @@ const SENTIMENT_COLORS: Record<string, string> = {
 
 export default function RelatoriosPage() {
   const { data: allData, isLoading } = useAuditorias()
+  const { getSellerDisplayName } = useSellerNames()
   const [period, setPeriod] = useState<Period>('30d')
   const [vendedor, setVendedor] = useState('')
   const [sentimento, setSentimento] = useState('')
@@ -84,17 +86,21 @@ export default function RelatoriosPage() {
   const bestScore = filtered.length > 0 ? Math.max(...filtered.map(a => a.ai_score)) : 0
 
   // Dados por vendedor para gráfico de barras
-  const vendedores = [...new Set(periodFiltered.map(a => a.vendedor_name))].filter(Boolean)
-  const vendedorStats = useMemo(() => vendedores.map(name => {
-    const audits = filtered.filter(a => a.vendedor_name === name)
-    return {
-      name: name.split(' ')[0], // Primeiro nome
-      fullName: name,
+  const vendedorStats = useMemo(() => {
+    const groups = new Map<string, Auditoria[]>()
+    filtered.forEach((audit) => {
+      const displayName = getSellerDisplayName(audit.vendedor_name)
+      groups.set(displayName, [...(groups.get(displayName) || []), audit])
+    })
+
+    return [...groups.entries()].map(([fullName, audits]) => ({
+      name: fullName.split(' ')[0],
+      fullName,
       score: getAverageScore(audits),
       total: audits.length,
       positivos: audits.filter(a => ['Positivo', 'Interessado'].includes(a.lead_sentiment)).length,
-    }
-  }).sort((a, b) => b.score - a.score), [filtered, vendedores])
+    })).sort((a, b) => b.score - a.score)
+  }, [filtered, getSellerDisplayName])
 
   // Dados para pizza de sentimentos
   const sentimentData = useMemo(() => {
@@ -124,7 +130,7 @@ export default function RelatoriosPage() {
         <div className="flex items-center gap-2">
           {isLoading && <Loader2 size={14} className="text-blue-500 animate-spin" />}
           <button
-            onClick={() => exportToCSV(filtered)}
+            onClick={() => exportToCSV(filtered, getSellerDisplayName)}
             disabled={filtered.length === 0}
             className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all"
           >
@@ -164,7 +170,7 @@ export default function RelatoriosPage() {
               className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 px-3 py-2 text-xs outline-none focus:border-blue-500 transition-all"
             >
               <option value="">Todos os vendedores</option>
-              {allVendedores.map(v => <option key={v} value={v}>{v}</option>)}
+              {allVendedores.map(v => <option key={v} value={v}>{getSellerDisplayName(v)}</option>)}
             </select>
 
             <select
@@ -366,9 +372,9 @@ export default function RelatoriosPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-md bg-blue-600/20 border border-blue-500/20 flex items-center justify-center text-[8px] font-bold text-blue-400">
-                          {getInitials(a.vendedor_name || '?')}
+                          {getInitials(getSellerDisplayName(a.vendedor_name) || '?')}
                         </div>
-                        <span className="text-[11px] text-slate-700 dark:text-slate-300">{a.vendedor_name || '—'}</span>
+                         <span className="text-[11px] text-slate-700 dark:text-slate-300">{getSellerDisplayName(a.vendedor_name)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-[11px] text-slate-800 dark:text-slate-200 font-medium">{a.cliente_name || '—'}</td>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuditorias } from '@/hooks/useAuditorias'
+import { useSellerNames } from '@/hooks/useSellerNames'
 import { getStatus, getScoreColor, getAverageScore, calcROI } from '@/lib/utils'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -20,6 +21,7 @@ const PERIOD_LABELS: Record<Period, string> = {
 
 export default function DashboardPage() {
   const { data: allData, isLoading } = useAuditorias()
+  const { getSellerDisplayName } = useSellerNames()
   const [period, setPeriod] = useState<Period>('7d')
   const [ticketMedio, setTicketMedio] = useState(0)
 
@@ -68,7 +70,7 @@ export default function DashboardPage() {
 
   // Dados para gráfico baseados no período
   const chartData = useMemo(() => {
-    const sellers = [...new Set(data.map(a => a.vendedor_name))].filter(Boolean)
+    const sellers = [...new Set(data.map(a => getSellerDisplayName(a.vendedor_name)))].filter(Boolean)
 
     if (period === '1d') {
       // Gráfico por hora
@@ -77,7 +79,7 @@ export default function DashboardPage() {
         const dayData: any = { day: hour }
         sellers.forEach(seller => {
           const filtered = data.filter(a => {
-            return new Date(a.created_at).getHours() === index && a.vendedor_name === seller
+            return new Date(a.created_at).getHours() === index && getSellerDisplayName(a.vendedor_name) === seller
           })
           if (filtered.length > 0) {
             const sum = filtered.reduce((acc, a) => acc + a.ai_score, 0)
@@ -99,17 +101,17 @@ export default function DashboardPage() {
     return days.map((day, index) => {
       const dayData: any = { day }
       sellers.forEach(seller => {
-        const sellerAudits = data.filter(a => {
-          if (period === '7d') {
-            return new Date(a.created_at).getDay() === index && a.vendedor_name === seller
-          } else {
-            const d = new Date()
-            d.setDate(d.getDate() - (29 - index))
+          const sellerAudits = data.filter(a => {
+            if (period === '7d') {
+              return new Date(a.created_at).getDay() === index && getSellerDisplayName(a.vendedor_name) === seller
+            } else {
+              const d = new Date()
+              d.setDate(d.getDate() - (29 - index))
             const auditDate = new Date(a.created_at)
             return (
               auditDate.getDate() === d.getDate() &&
               auditDate.getMonth() === d.getMonth() &&
-              a.vendedor_name === seller
+              getSellerDisplayName(a.vendedor_name) === seller
             )
           }
         })
@@ -120,17 +122,17 @@ export default function DashboardPage() {
       })
       return dayData
     })
-  }, [data, period])
+  }, [data, period, getSellerDisplayName])
 
   const topSellers = useMemo(() => {
-    const sellers = [...new Set(data.map(a => a.vendedor_name))].filter(Boolean)
+    const sellers = [...new Set(data.map(a => getSellerDisplayName(a.vendedor_name)))].filter(Boolean)
     return sellers.map(name => {
-      const sellerAudits = data.filter(a => a.vendedor_name === name)
+      const sellerAudits = data.filter(a => getSellerDisplayName(a.vendedor_name) === name)
       const avg = getAverageScore(sellerAudits)
       const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
       return { name, score: avg, initials, total: sellerAudits.length }
     }).sort((a, b) => b.score - a.score).slice(0, 5)
-  }, [data])
+  }, [data, getSellerDisplayName])
 
   const cards = [
     {
@@ -176,7 +178,7 @@ export default function DashboardPage() {
   ]
 
   const chartColors = ['#3b82f6', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b']
-  const uniqueSellers = [...new Set(data.map(a => a.vendedor_name))].filter(Boolean)
+  const uniqueSellers = [...new Set(data.map(a => getSellerDisplayName(a.vendedor_name)))].filter(Boolean)
 
   return (
     <div>

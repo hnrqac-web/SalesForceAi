@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { useAuditorias } from '@/hooks/useAuditorias'
+import { useSellerNames } from '@/hooks/useSellerNames'
 import { getAverageScore, getScoreColor, getSentimentColor, getStatusColor, getStatus, formatDate, getInitials } from '@/lib/utils'
 import { AuditDetailSheet } from '@/components/AuditDetailSheet'
 import { useState } from 'react'
@@ -16,15 +17,16 @@ export default function VendedorPage() {
   const { vendedor } = useParams<{ vendedor: string }>()
   const router = useRouter()
   const { data: allData, isLoading } = useAuditorias()
+  const { getSellerDisplayName } = useSellerNames()
   const [selected, setSelected] = useState<Auditoria | null>(null)
 
   const nome = decodeURIComponent(vendedor)
 
   const auditorias = useMemo(
-    () => allData.filter(a => a.vendedor_name === nome).sort((a, b) =>
+    () => allData.filter(a => getSellerDisplayName(a.vendedor_name) === nome).sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     ),
-    [allData, nome]
+    [allData, nome, getSellerDisplayName]
   )
 
   const avgScore = getAverageScore(auditorias)

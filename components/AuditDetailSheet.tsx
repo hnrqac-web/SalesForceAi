@@ -7,6 +7,7 @@ import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activi
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { evolutionService } from '@/lib/evolution'
+import { useSellerNames } from '@/hooks/useSellerNames'
 
 interface Props {
   auditoria: Auditoria | null
@@ -45,6 +46,7 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 export function AuditDetailSheet({ auditoria, onClose }: Props) {
+  const { getSellerDisplayName } = useSellerNames()
   const [copied, setCopied] = useState(false)
   const [copiedMsg, setCopiedMsg] = useState(false)
   const [tab, setTab] = useState<'overview' | 'transcript' | 'behavior'>('overview')
@@ -245,10 +247,11 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const explicitObj = safeArray(auditoria.explicit_objections)
   const hiddenObj = safeArray(auditoria.hidden_objections)
   const positiveSig = safeArray(auditoria.positive_signals)
+  const vendedorDisplayName = getSellerDisplayName(auditoria.vendedor_name)
 
   const lines = extractTranscriptLines(
     auditoria.transcript_completo || auditoria.transcript,
-    auditoria.vendedor_name,
+    vendedorDisplayName,
     auditoria.cliente_name
   )
   const status = getStatus(auditoria.ai_score)
@@ -325,7 +328,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               <div className="grid grid-cols-2 gap-1.5">
                 {[
                   { label: 'Cliente', value: auditoria.cliente_name },
-                  { label: 'Vendedor', value: auditoria.vendedor_name },
+                  { label: 'Vendedor', value: vendedorDisplayName },
                   { label: 'Data', value: formatDate(auditoria.created_at) },
                   { label: 'Canal', value: 'WhatsApp' },
                 ].map(m => (
@@ -437,13 +440,13 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                         line.from === 'v' ? 'bg-blue-800 text-blue-200' : 'bg-slate-700 text-slate-700 dark:text-slate-300'
                       }`}>
                         {line.from === 'v'
-                          ? (auditoria.vendedor_name?.[0] || 'V')
+                          ? (vendedorDisplayName?.[0] || 'V')
                           : (auditoria.cliente_name?.[0] || 'C')
                         }
                       </div>
                       <div className={`max-w-[80%] ${line.from === 'v' ? 'items-end' : 'items-start'} flex flex-col`}>
                         <div className="text-[9px] text-slate-400 dark:text-slate-500 mb-1">
-                          {line.from === 'v' ? auditoria.vendedor_name : auditoria.cliente_name}
+                          {line.from === 'v' ? vendedorDisplayName : auditoria.cliente_name}
                         </div>
                         <div className={`text-xs px-3 py-2 rounded-xl leading-relaxed ${
                           line.from === 'v'

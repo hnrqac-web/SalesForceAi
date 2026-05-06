@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useAuditorias } from '@/hooks/useAuditorias'
+import { useSellerNames } from '@/hooks/useSellerNames'
 import { getScoreColor, getSentimentColor, getInitials, formatDate } from '@/lib/utils'
 import { Auditoria } from '@/types/auditoria'
 import { Search, X, Zap, Clock, ArrowRight } from 'lucide-react'
@@ -17,6 +18,7 @@ export function SearchModal({ isOpen, onClose }: Props) {
   const [selected, setSelected] = useState<Auditoria | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const { data } = useAuditorias()
+  const { getSellerDisplayName } = useSellerNames()
 
   useEffect(() => {
     if (isOpen) {
@@ -39,11 +41,12 @@ export function SearchModal({ isOpen, onClose }: Props) {
     return data.filter(a =>
       (a.cliente_name || '').toLowerCase().includes(q) ||
       (a.vendedor_name || '').toLowerCase().includes(q) ||
+      getSellerDisplayName(a.vendedor_name).toLowerCase().includes(q) ||
       (a.ai_summary || '').toLowerCase().includes(q) ||
       (a.lead_sentiment || '').toLowerCase().includes(q) ||
       (a.next_step_suggestion || '').toLowerCase().includes(q)
     ).slice(0, 8)
-  }, [query, data])
+  }, [query, data, getSellerDisplayName])
 
   const recent = useMemo(() => data.slice(0, 5), [data])
   const showRecent = query.length < 2
@@ -70,7 +73,7 @@ export function SearchModal({ isOpen, onClose }: Props) {
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:bg-slate-800/60 transition-colors text-left group rounded-xl"
       >
         <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/20 flex items-center justify-center text-[10px] font-bold text-blue-400 flex-shrink-0">
-          {getInitials(a.vendedor_name || '?')}
+          {getInitials(getSellerDisplayName(a.vendedor_name) || '?')}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
@@ -81,7 +84,7 @@ export function SearchModal({ isOpen, onClose }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-              {q ? highlight(a.vendedor_name || '', q) : a.vendedor_name}
+              {q ? highlight(getSellerDisplayName(a.vendedor_name), q) : getSellerDisplayName(a.vendedor_name)}
             </span>
             {a.ai_summary && (
               <span className="text-[10px] text-slate-600 truncate hidden sm:inline">

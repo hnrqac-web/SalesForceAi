@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuditorias } from '@/hooks/useAuditorias'
+import { useSellerNames } from '@/hooks/useSellerNames'
 import { AuditDetailSheet } from '@/components/AuditDetailSheet'
 import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, getInitials } from '@/lib/utils'
 import { Search, Calendar, User, Loader2, ChevronLeft, ChevronRight, Filter, X, ChevronUp, ChevronDown, Lock } from 'lucide-react'
-import { evolutionService } from '@/lib/evolution'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 
@@ -27,27 +27,7 @@ export default function AuditoriasPage() {
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [instancesMap, setInstancesMap] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    async function loadInstances() {
-      try {
-        const instances = await evolutionService.getInstances()
-        const map: Record<string, string> = {}
-        instances.forEach((inst: any) => {
-          if (inst.name && inst.profileName) {
-            map[inst.name] = inst.profileName
-          }
-        })
-        setInstancesMap(map)
-      } catch (err) {
-        console.error('Failed to load instances map', err)
-      }
-    }
-    loadInstances()
-  }, [])
-
-  const getMappedVendedorName = (name: string) => name ? (instancesMap[name] || name) : '—'
+  const { getSellerDisplayName: getMappedVendedorName } = useSellerNames()
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -55,7 +35,7 @@ export default function AuditoriasPage() {
     setPage(1)
   }
 
-  const vendedores = useMemo(() => [...new Set(data.map((a) => getMappedVendedorName(a.vendedor_name)))].filter(Boolean), [data, instancesMap])
+  const vendedores = useMemo(() => [...new Set(data.map((a) => getMappedVendedorName(a.vendedor_name)))].filter(Boolean), [data, getMappedVendedorName])
 
   const filtered = useMemo(() => {
     const f = data.filter((a) => {
@@ -85,7 +65,7 @@ export default function AuditoriasPage() {
       const cmp = typeof av === 'number' ? av - (bv as number) : String(av).localeCompare(String(bv))
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [data, filterVendedor, filterData, filterCliente, filterScore, filterStatus, sortKey, sortDir, instancesMap])
+  }, [data, filterVendedor, filterData, filterCliente, filterScore, filterStatus, sortKey, sortDir, getMappedVendedorName])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)

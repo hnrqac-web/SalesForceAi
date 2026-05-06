@@ -5,9 +5,11 @@ import { toast } from 'sonner'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
 import { Auditoria } from '@/types/auditoria'
+import { useSellerNames } from './useSellerNames'
 
 export function useAuditNotifications() {
   const queryClient = useQueryClient()
+  const { getSellerDisplayName } = useSellerNames()
   const isFirstLoad = useRef(true)
   const channelId = useRef(`notif-${Math.random().toString(36).slice(2)}`)
 
@@ -35,7 +37,7 @@ export function useAuditNotifications() {
             const audit = payload.new as Auditoria
             const score = audit.ai_score
             const cliente = audit.cliente_name || 'Novo cliente'
-            const vendedor = audit.vendedor_name || 'Vendedor'
+            const vendedor = getSellerDisplayName(audit.vendedor_name)
 
             if (score < 5) {
               toast.error(`🚨 Lead Crítico — ${cliente}`, {
@@ -63,5 +65,5 @@ export function useAuditNotifications() {
       clearTimeout(timer)
       supabase.removeChannel(channel)
     }
-  }, [queryClient])
+  }, [queryClient, getSellerDisplayName])
 }
