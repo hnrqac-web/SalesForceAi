@@ -5,12 +5,6 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const N8N_WEBHOOK_URL = 'https://salesforceai.app.n8n.cloud/webhook/ia-trigger' 
 
-// Mapeamento manual de instâncias para nomes (Sempre funciona)
-const INSTANCE_MAP: Record<string, string> = {
-  'Admin-965': 'Henrique Alves',
-  'admin-965': 'Henrique Alves'
-};
-
 serve(async (req) => {
   try {
     const body = await req.json()
@@ -27,11 +21,26 @@ serve(async (req) => {
     const remoteJid = body.data?.key?.remoteJid || '';
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido';
     
-    // Identifica o vendedor usando o mapeamento ou o pushName se disponível
-    const instanciaKey = body.instance || body.instanceName || '';
-    const vendedorNome = INSTANCE_MAP[instanciaKey] || (fromMe ? (body.data?.pushName || instanciaKey) : instanciaKey);
+    // CAPTURA DO NOME REAL DA CONTA SINCRONIZADA:
+    // 1. Tenta pegar do objeto 'instance' (comum em versões novas)
+    // 2. Tenta pegar do 'pushName' da mensagem (quando fromMe é true)
+    // 3. Fallback para 'Henrique Alves' se for a sua instância Admin-965
+    let vendedorNome = 'Henrique Alves'; // Default para o seu caso
 
-    // O nome do cliente é o pushName ou o número (ID)
+    if (typeof body.instance === 'object' && body.instance?.pushName) {
+      vendedorNome = body.instance.pushName;
+    } else if (fromMe && body.data?.pushName) {
+      vendedorNome = body.data.pushName;
+    } else {
+      // Se for apenas o ID string, verificamos se é o seu
+      const instanciaId = typeof body.instance === 'string' ? body.instance : (body.instanceName || '');
+      if (instanciaId.includes('Admin-965')) {
+        vendedorNome = 'Henrique Alves';
+      } else {
+        vendedorNome = instanciaId;
+      }
+    }
+
     const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -49,7 +58,6 @@ serve(async (req) => {
     const now = new Date().getTime()
     const diffSeconds = (now - lastTrigger) / 1000
 
-    // Análise em Tempo Real (5 segundos)
     if (diffSeconds > 5) {
       await supabase.rpc('mark_ai_triggered', { p_auditoria_id: rpcData.auditoria_id })
       fetch(N8N_WEBHOOK_URL, {
@@ -60,7 +68,7 @@ serve(async (req) => {
           cliente_name: clienteNome,
           vendedor_name: vendedorNome
         })
-      }).catch(err => console.error('Erro n8n:', err))
+      }).catch(err => console.error(err))
     }
 
     return new Response(JSON.stringify({ status: 'success' }), { status: 200 })
