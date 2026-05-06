@@ -147,16 +147,46 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       let messagesArray: any[] = []
       if (Array.isArray(response)) {
         messagesArray = response
-      } else if (response && Array.isArray(response.messages)) {
+      } else if (response?.messages && Array.isArray(response.messages)) {
         messagesArray = response.messages
-      } else if (response && response.response && Array.isArray(response.response)) {
-        messagesArray = response.response
-      } else if (response && response.data && Array.isArray(response.data)) {
+      } else if (response?.data && Array.isArray(response.data)) {
         messagesArray = response.data
+      } else if (response?.response && Array.isArray(response.response)) {
+        messagesArray = response.response
+      } else if (response?.data?.messages && Array.isArray(response.data.messages)) {
+        messagesArray = response.data.messages
+      } else if (response?.response?.data && Array.isArray(response.response.data)) {
+        messagesArray = response.response.data
+      }
+      
+      // Retry para números do Brasil (problema do 9º dígito)
+      if (messagesArray.length === 0 && cleanJid.startsWith('55')) {
+        const parts = cleanJid.split('@');
+        const number = parts[0];
+        let alternativeJid = null;
+        
+        if (number.length === 13 && number[4] === '9') {
+          // Tem o 9, tenta sem
+          alternativeJid = number.substring(0, 4) + number.substring(5) + '@' + parts[1];
+        } else if (number.length === 12) {
+          // Não tem o 9, tenta com (regiões que usam 9)
+          alternativeJid = number.substring(0, 4) + '9' + number.substring(4) + '@' + parts[1];
+        }
+
+        if (alternativeJid) {
+          console.log('Tentando JID alternativo para Brasil:', alternativeJid);
+          const altResponse = await evolutionService.fetchMessages(instanceName, alternativeJid, 100);
+          
+          if (Array.isArray(altResponse)) messagesArray = altResponse;
+          else if (altResponse?.messages) messagesArray = altResponse.messages;
+          else if (altResponse?.data) messagesArray = altResponse.data;
+          else if (altResponse?.response) messagesArray = altResponse.response;
+        }
       }
       
       if (messagesArray.length === 0) {
         toast.info('Chat localizado, mas nenhuma mensagem nova foi encontrada.')
+        setIsSyncing(false)
         return
       }
 
