@@ -6,6 +6,8 @@ import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate
 import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle, Loader2, Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { RefreshCw, X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle, Loader2, Lock } from 'lucide-react'
+import { evolutionService } from '@/lib/evolution'
 
 interface Props {
   auditoria: Auditoria | null
@@ -48,6 +50,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const [copiedMsg, setCopiedMsg] = useState(false)
   const [tab, setTab] = useState<'overview' | 'transcript' | 'behavior'>('overview')
   const [isClosing, setIsClosing] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [showConfirmClose, setShowConfirmClose] = useState(false)
 
   if (!auditoria) return null
@@ -72,6 +75,57 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
   const handleCloseSession = () => {
     setShowConfirmClose(true)
+  }
+
+  const handleSyncHistory = async () => {
+    if (!auditoria.cliente_jid) {
+      toast.error('JID do cliente não disponível para sincronização.')
+      return
+    }
+
+    setIsSyncing(true)
+    try {
+      // 1. Busca histórico da Evolution API
+      const response = await evolutionService.fetchMessages(
+        auditoria.vendedor_name, 
+        auditoria.cliente_jid,
+        30 // Puxa as últimas 30 mensagens
+      )
+
+      const messages = response?.messages || []
+      if (messages.length === 0) {
+        toast.info('Nenhuma mensagem nova encontrada no WhatsApp.')
+        return
+      }
+
+      // 2. Formata o novo transcript
+      const formattedTranscript = messages
+        .reverse() // Do mais antigo para o mais novo
+        .map((m: any) => {
+          const fromMe = m.key?.fromMe
+          const text = m.message?.conversation || 
+                       m.message?.extendedTextMessage?.text || 
+                       m.message?.imageMessage?.caption || 
+                       ' (Mídia ou Mensagem não suportada)'
+          return `${fromMe ? 'Vendedor' : 'Cliente'}: ${text}`
+        })
+        .join('\n')
+
+      // 3. Atualiza o banco de dados
+      const { error } = await supabase
+        .from('auditorias')
+        .update({ transcript_completo: formattedTranscript })
+        .eq('id', auditoria.id)
+
+      if (error) throw error
+
+      toast.success('Histórico sincronizado! Recarregue a página para ver.')
+    } catch (err) {
+      console.error('Erro na sincronização:', err)
+      toast.error('Erro ao sincronizar histórico com o WhatsApp.')
+    } finally {
+      setIsSyncing(false)
+    }
   }
   
   const safeArray = (val: any): string[] => {
@@ -123,14 +177,25 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                 CONCLUÍDO
               </span>
             ) : (
-              <button
-                onClick={handleCloseSession}
-                disabled={isClosing}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-50"
-              >
-                {isClosing ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                FINALIZAR
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSyncHistory}
+                  disabled={isSyncing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-50"
+                  title="Sincronizar mensagens perdidas"
+                >
+                  {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                  SYNC
+                </button>
+                <button
+                  onClick={handleCloseSession}
+                  disabled={isClosing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-50"
+                >
+                  {isClosing ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                  FINALIZAR
+                </button>
+              </div>
             )}
             <button onClick={onClose} className="w-7 h-7 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors">
               <X size={13} />

@@ -151,4 +151,20 @@ export const evolutionService = {
       throw error;
     }
   }
+  /**
+   * Busca mensagens de um chat (histórico)
+   */
+  async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
+    try {
+      const response = await fetch(`/api/evolution?endpoint=/chat/fetchMessages/${instanceName}?number=${remoteJid}&count=${count}`, {
+        method: 'GET',
+      });
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar histórico:', error);
+      throw error;
+    }
+  }
 };

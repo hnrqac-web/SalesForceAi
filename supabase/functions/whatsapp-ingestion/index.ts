@@ -22,12 +22,19 @@ serve(async (req) => {
   try {
     const body = await req.json()
     const eventName = (body.event || '').toLowerCase()
+    const allowedEvents = ['messages.upsert', 'messages_upsert', 'send_message']
     
-    if (eventName !== 'messages.upsert' && eventName !== 'messages_upsert') {
-      return new Response(JSON.stringify({ status: 'ignored' }), { status: 200 })
+    if (!allowedEvents.includes(eventName)) {
+      return new Response(JSON.stringify({ status: 'ignored', event: eventName }), { status: 200 })
     }
 
-    const message = body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text || ''
+    const message = body.data?.message?.conversation || 
+                    body.data?.message?.extendedTextMessage?.text || 
+                    body.data?.message?.imageMessage?.caption ||
+                    body.data?.message?.videoMessage?.caption ||
+                    body.data?.message?.text || 
+                    body.data?.text ||
+                    ''
     if (!message) return new Response(JSON.stringify({ status: 'no_message' }), { status: 200 })
 
     const fromMe = body.data?.key?.fromMe || false
