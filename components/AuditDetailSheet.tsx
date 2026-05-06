@@ -83,10 +83,20 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
     try {
       // 1. Localiza a Instância Correta (pode ser pelo nome ou pelo número do vendedor)
       toast.info('Localizando instância do vendedor...')
-      const instanceName = await evolutionService.findInstanceByName(auditoria.vendedor_name)
+      let instanceName = await evolutionService.findInstanceByName(auditoria.vendedor_name)
       
+      // Se não achou pelo nome/número salvo, tenta pegar a primeira instância conectada como fallback
       if (!instanceName) {
-        throw new Error(`Não foi possível encontrar uma instância conectada para o vendedor "${auditoria.vendedor_name}". Verifique se o WhatsApp dele está pareado.`)
+        const instances = await evolutionService.fetchInstances()
+        const firstOpen = Array.isArray(instances) ? instances.find((i: any) => i.status === 'open') : null
+        if (firstOpen) {
+          instanceName = firstOpen.instanceName
+          console.log(`Usando fallback de instância: ${instanceName}`)
+        }
+      }
+
+      if (!instanceName) {
+        throw new Error(`Nenhuma instância do WhatsApp encontrada. Verifique se o seu WhatsApp está pareado na Evolution API.`)
       }
 
       let jid = auditoria.cliente_jid

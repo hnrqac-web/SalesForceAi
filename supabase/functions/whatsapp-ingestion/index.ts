@@ -14,7 +14,14 @@ function pickFirstString(...values: unknown[]) {
 
 function extractSellerName(body: any) {
   const instance = body?.instance
+  // Tenta pegar o número do dono da instância (owner) se disponível no body da Evolution API
+  // Caso contrário, usa o nome da instância
+  const owner = body?.data?.instance?.owner || body?.instance?.owner
   const instanceName = typeof instance === 'string' ? instance : (instance?.name || instance?.instanceName)
+  
+  // Prioriza o número do dono (owner), removendo caracteres não numéricos
+  if (owner) return owner.split('@')[0].replace(/\D/g, '')
+  
   return instanceName || 'Vendedor não identificado'
 }
 

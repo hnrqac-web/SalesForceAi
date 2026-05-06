@@ -178,19 +178,20 @@ export const evolutionService = {
 
       const cleanTarget = nameOrNumber.replace(/\D/g, '');
 
-      // 1. Tenta encontrar por número (owner) primeiro se for um número
+      // 1. Tenta por nome exato (mais rápido)
+      const exactName = instances.find((inst: any) => inst.instanceName === nameOrNumber);
+      if (exactName) return exactName.instanceName;
+
+      // 2. Tenta encontrar por número (owner) se o alvo for um número
       if (cleanTarget.length > 8) {
-        const byOwner = instances.find((inst: any) => 
-          inst.owner?.includes(cleanTarget) && inst.status === 'open'
-        );
+        const byOwner = instances.find((inst: any) => inst.owner?.includes(cleanTarget));
         if (byOwner) return byOwner.instanceName;
       }
 
-      // 2. Tenta encontrar pelo nome da instância
+      // 3. Tenta encontrar pelo nome da instância (parcial)
       const byName = instances.find((inst: any) => 
-        (inst.instanceName?.toLowerCase().includes(nameOrNumber.toLowerCase()) || 
-         nameOrNumber.toLowerCase().includes(inst.instanceName?.toLowerCase())) &&
-        inst.status === 'open'
+        inst.instanceName?.toLowerCase().includes(nameOrNumber.toLowerCase()) || 
+        nameOrNumber.toLowerCase().includes(inst.instanceName?.toLowerCase())
       );
 
       return byName?.instanceName || null;
