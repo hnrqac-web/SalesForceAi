@@ -48,6 +48,18 @@ function normalizeDigits(value: string | null | undefined) {
   return digits || null
 }
 
+function normalizeClientJid(value: string | null | undefined) {
+  if (!value) return null
+  const raw = value.trim()
+  return raw.split('@')[0].replace(/\D/g, '') || null
+}
+
+function normalizeClientName(value: string | null | undefined) {
+  if (!value) return null
+  const normalized = value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase()
+  return normalized || null
+}
+
 function buildSellerIdentity(inst: any): SellerIdentity {
   const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name
   const owner = inst.owner || inst.instance?.owner || inst.data?.owner || inst.connection?.owner || inst.instance?.data?.owner
@@ -171,11 +183,14 @@ async function upsertAuditoria(
 
   if (selectError) throw selectError
 
-  const cleanJid = clienteJid.split('@')[0]
+  const cleanJid = normalizeClientJid(clienteJid) || clienteJid.split('@')[0]
+  const normalizedClientName = normalizeClientName(clienteName)
   const existing = (existingRows || []).find((row: any) => {
-    const jidMatches = schemaSupport.hasClienteJid && row.cliente_jid && [row.cliente_jid, `${row.cliente_jid}@s.whatsapp.net`].includes(clienteJid)
-    const nameMatches = row.cliente_name === clienteName
-    const statusMatches = !schemaSupport.hasStatus || !row.status || row.status === 'aberto'
+    const rowClientJid = normalizeClientJid(row.cliente_jid)
+    const jidMatches = !!cleanJid && !!rowClientJid && rowClientJid === cleanJid
+    const rowClientName = normalizeClientName(row.cliente_name)
+    const nameMatches = !!normalizedClientName && !!rowClientName && rowClientName === normalizedClientName
+    const statusMatches = !schemaSupport.hasStatus || !row.status || String(row.status).toLowerCase() === 'aberto'
     const vendedorMatches = vendedorIdentity.aliases.length === 0 || vendedorIdentity.aliases.includes(row.vendedor_name)
     return vendedorMatches && statusMatches && (jidMatches || nameMatches)
   })

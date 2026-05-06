@@ -44,6 +44,18 @@ function normalizeJid(value: string | null | undefined) {
   return digits ? `${digits}@s.whatsapp.net` : raw
 }
 
+function normalizeClientJid(value: string | null | undefined) {
+  const normalized = normalizeJid(value)
+  if (!normalized) return null
+  return normalized.split('@')[0]
+}
+
+function normalizeClientName(value: string | null | undefined) {
+  const raw = pickFirstString(value)
+  if (!raw) return null
+  return raw.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
 function pickFirstBoolean(...values: unknown[]) {
   for (const value of values) {
     if (typeof value === 'boolean') return value
@@ -190,11 +202,14 @@ async function upsertAuditoria(
 
   if (selectError) throw selectError
 
-  const cleanJid = clienteJid.split('@')[0]
+  const cleanJid = normalizeClientJid(clienteJid) || clienteJid.split('@')[0]
+  const normalizedClientName = normalizeClientName(clienteName)
   const existing = (existingRows || []).find((row: any) => {
-    const jidMatches = schemaSupport.hasClienteJid && row.cliente_jid && [row.cliente_jid, `${row.cliente_jid}@s.whatsapp.net`].includes(clienteJid)
-    const nameMatches = row.cliente_name === clienteName
-    const statusMatches = !schemaSupport.hasStatus || !row.status || row.status === 'aberto'
+    const rowClientJid = normalizeClientJid(row.cliente_jid)
+    const jidMatches = !!cleanJid && !!rowClientJid && rowClientJid === cleanJid
+    const rowClientName = normalizeClientName(row.cliente_name)
+    const nameMatches = !!normalizedClientName && !!rowClientName && rowClientName === normalizedClientName
+    const statusMatches = !schemaSupport.hasStatus || !row.status || String(row.status).toLowerCase() === 'aberto'
     const vendedorMatches = vendedorIdentity.aliases.length === 0 || vendedorIdentity.aliases.includes(row.vendedor_name)
     return vendedorMatches && statusMatches && (jidMatches || nameMatches)
   })
