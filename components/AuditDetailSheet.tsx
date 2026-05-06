@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, extractTranscriptLines } from '@/lib/utils'
-import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle } from 'lucide-react'
+import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle, Loader2, Lock } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 interface Props {
   auditoria: Auditoria | null
@@ -45,8 +46,29 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const [copied, setCopied] = useState(false)
   const [copiedMsg, setCopiedMsg] = useState(false)
   const [tab, setTab] = useState<'overview' | 'transcript' | 'behavior'>('overview')
+  const [isClosing, setIsClosing] = useState(false)
 
   if (!auditoria) return null
+  
+  const handleCloseSession = async () => {
+    if (!confirm('Deseja realmente finalizar este atendimento? Novas mensagens do cliente criarão uma nova auditoria separada.')) return
+    
+    setIsClosing(true)
+    try {
+      const { error } = await supabase
+        .from('auditorias')
+        .update({ status: 'concluido' })
+        .eq('id', auditoria.id)
+      
+      if (error) throw error
+      onClose()
+    } catch (err) {
+      console.error('Erro ao finalizar:', err)
+      alert('Erro ao finalizar atendimento.')
+    } finally {
+      setIsClosing(false)
+    }
+  }
   
   const safeArray = (val: any): string[] => {
     if (!val) return []
@@ -90,9 +112,26 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               {auditoria.cliente_name} · {formatDate(auditoria.created_at)}
             </div>
           </div>
-          <button onClick={onClose} className="w-7 h-7 bg-slate-800 border border-slate-700 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors">
-            <X size={13} />
-          </button>
+          <div className="flex items-center gap-2">
+            {auditoria.status === 'concluido' ? (
+              <span className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800/50 text-slate-500 rounded-lg text-[10px] font-bold border border-slate-700/50">
+                <Lock size={12} />
+                CONCLUÍDO
+              </span>
+            ) : (
+              <button
+                onClick={handleCloseSession}
+                disabled={isClosing}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-50"
+              >
+                {isClosing ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                FINALIZAR
+              </button>
+            )}
+            <button onClick={onClose} className="w-7 h-7 bg-slate-800 border border-slate-700 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors">
+              <X size={13} />
+            </button>
+          </div>
         </div>
 
         {/* Score Hero */}

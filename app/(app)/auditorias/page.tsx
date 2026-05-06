@@ -5,7 +5,7 @@ import { useAuditorias } from '@/hooks/useAuditorias'
 import { AuditDetailSheet } from '@/components/AuditDetailSheet'
 import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, getInitials } from '@/lib/utils'
-import { Search, Calendar, User, Loader2, ChevronLeft, ChevronRight, Filter, X, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Calendar, User, Loader2, ChevronLeft, ChevronRight, Filter, X, ChevronUp, ChevronDown, Lock } from 'lucide-react'
 
 type SortKey = 'created_at' | 'ai_score' | 'vendedor_name' | 'cliente_name' | 'lead_sentiment'
 type SortDir = 'asc' | 'desc'
@@ -223,8 +223,9 @@ export default function AuditoriasPage() {
                           onClick={() => setSelectedId(a.id)}
                         >
                           <td className="px-6 py-4">
-                            <div className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">
+                            <div className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
                               {a.cliente_name || '—'}
+                              {a.status === 'concluido' && <Lock size={10} className="text-slate-500" title="Atendimento Concluído" />}
                             </div>
                             <div className="text-[10px] text-slate-600 mt-0.5">WhatsApp Chat</div>
                           </td>

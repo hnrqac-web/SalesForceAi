@@ -8,6 +8,7 @@ export type Auditoria = {
   ai_summary: string
   next_step_suggestion: string
   lead_sentiment: string
+  status?: 'aberto' | 'concluido' | string
 
   // Novos campos de análise comportamental (opcionais para retrocompatibilidade)
   customer_intent?: string
