@@ -120,34 +120,39 @@ export default function AuditoriasPage() {
           <div className="flex gap-2">
             <button 
               onClick={async () => {
-                const toastId = toast.loading('Buscando novos chats nas instâncias...')
+                const toastId = toast.loading('Sincronizando chats recentes...')
                 try {
                   const instances = await evolutionService.getInstances()
                   let totalImported = 0
                   
-                  for (const inst of instances) {
-                    if (inst.connectionStatus !== 'open') continue
+                  // Filtra apenas instâncias conectadas para evitar timeouts
+                  const activeInstances = instances.filter((inst: any) => inst.connectionStatus === 'open')
+                  
+                  for (const inst of activeInstances) {
                     const chats = await evolutionService.findChats(inst.name)
+                    // Pega apenas os 10 chats mais recentes para não travar
+                    const recentChats = chats.slice(0, 10)
                     
-                    for (const chat of chats) {
+                    await Promise.all(recentChats.map(async (chat: any) => {
                       const jid = chat.id || chat.remoteJid
                       const name = chat.name || chat.pushName || jid.split('@')[0]
                       
-                      const { data: rpcData, error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
+                      const { error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
                         p_cliente_jid: jid,
                         p_cliente_name: name,
                         p_vendedor_name: inst.name,
-                        p_message: 'Sincronização inicial do chat',
+                        p_message: 'Sincronização manual',
                         p_from_me: true
                       })
                       if (!rpcError) totalImported++
-                    }
+                    }))
                   }
                   
-                  toast.success(`${totalImported} chats verificados/sincronizados.`, { id: toastId })
+                  toast.success(`Sincronização concluída! ${totalImported} chats verificados.`, { id: toastId })
                   refetch()
                 } catch (err) {
-                  toast.error('Erro ao sincronizar chats.', { id: toastId })
+                  console.error('Erro no Sync:', err)
+                  toast.error('Erro ao sincronizar. Tente novamente.', { id: toastId })
                 }
               }} 
               className="text-[10px] bg-slate-600/10 text-slate-400 border border-slate-500/20 px-2 py-1 rounded-lg hover:bg-slate-600/20 transition-colors font-medium flex items-center gap-1.5"
