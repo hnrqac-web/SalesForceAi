@@ -23,15 +23,20 @@ export async function POST(req: NextRequest) {
     let totalImported = 0
     // Processa todas as instâncias encontradas
     for (const inst of instances) {
-      const name = inst.instanceName || inst.name || inst.instance?.instanceName
+      const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name
       const status = inst.status || inst.connectionStatus || inst.instance?.status
       
       console.log(`[Sync] Processando instância: ${name}, Status: ${status}`)
       
       if (!name) continue;
 
-      const owner = inst.owner || inst.instance?.owner
-      const vendedorId = owner ? owner.split('@')[0].replace(/\D/g, '') : name
+      const owner = inst.owner || 
+                    inst.instance?.owner || 
+                    inst.data?.owner || 
+                    inst.connection?.owner || 
+                    inst.instance?.data?.owner
+
+      const vendedorId = owner ? (typeof owner === 'string' ? owner.split('@')[0].replace(/\D/g, '') : owner) : name
 
       // 2. Tenta buscar CHATS
       console.log(`[Sync] Buscando chats para ${name}...`)

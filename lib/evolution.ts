@@ -43,12 +43,37 @@ export const evolutionService = {
       const data = await response.json();
       const list = Array.isArray(data) ? data : (data?.data || data?.response || []);
       
-      // Mapeia para um formato padrão, extraindo o owner se disponível para bater com o webhook
-      return list.map((inst: any) => ({
-        name: inst.instanceName || inst.name,
-        connectionStatus: inst.status || inst.connectionStatus,
-        owner: inst.owner || inst.instance?.owner || null
-      }));
+      console.log('[Evolution] Instâncias recebidas:', list);
+
+      return list.map((inst: any) => {
+        // Tenta encontrar o nome da instância em vários caminhos
+        const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name;
+        
+        // Tenta encontrar o status de conexão
+        const connectionStatus = inst.status || inst.connectionStatus || inst.instance?.status || inst.instance?.connectionStatus;
+
+        // Tenta encontrar o owner (número do WhatsApp) em vários caminhos da v2
+        const owner = inst.owner || 
+                      inst.instance?.owner || 
+                      inst.data?.owner || 
+                      inst.connection?.owner || 
+                      inst.instance?.data?.owner ||
+                      null;
+
+        // Tenta encontrar o nome do perfil
+        const profileName = inst.profileName || 
+                            inst.instance?.profileName || 
+                            inst.data?.profileName || 
+                            inst.instance?.data?.profileName ||
+                            null;
+
+        return {
+          name,
+          connectionStatus,
+          owner,
+          profileName
+        };
+      });
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
       return [];
