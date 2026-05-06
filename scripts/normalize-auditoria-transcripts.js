@@ -66,7 +66,7 @@ function rewriteTranscript(transcript, vendedorName, clienteName) {
       continue
     }
 
-    const fullLine = `${rawLabel.trim()}: ${msg}`.trim()
+    const fullLine = trimmedLine
     if (current) {
       current.msg = `${current.msg}\n${fullLine}`
     } else {

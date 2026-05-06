@@ -112,7 +112,7 @@ export function extractTranscriptLines(
     }
 
     const previous = parsed[parsed.length - 1]
-    const fullLine = `${rawLabel.trim()}: ${msg}`.trim()
+    const fullLine = trimmedLine
     if (previous) {
       previous.msg = `${previous.msg}\n${fullLine}`
     } else {
