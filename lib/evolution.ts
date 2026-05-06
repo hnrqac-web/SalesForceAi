@@ -194,7 +194,11 @@ export const evolutionService = {
   async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
     try {
       // Tenta o formato padrão da documentação (v2)
-      const fetchAttempt = async (bodyFormat: any) => {
+      const fetchAttempt = async (jid: string, nested: boolean) => {
+        const bodyFormat = nested 
+          ? { where: { key: { remoteJid: jid } } }
+          : { where: { remoteJid: jid } };
+
         const response = await fetch('/api/evolution', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -205,26 +209,20 @@ export const evolutionService = {
           }),
         });
         const data = await response.json();
-        if (!response.ok) return null;
+        if (!response.ok) return [];
         
-        // Extrai o array de mensagens
-        if (Array.isArray(data)) return data;
-        if (data?.messages && Array.isArray(data.messages)) return data.messages;
-        if (data?.data && Array.isArray(data.data)) return data.data;
-        if (data?.response && Array.isArray(data.response)) return data.response;
-        return [];
+        const list = Array.isArray(data) ? data : (data?.messages || data?.data || data?.response || []);
+        return Array.isArray(list) ? list : [];
       };
 
-      // 1. Tenta formato com "key" (oficial)
-      let messages = await fetchAttempt({
-        where: { key: { remoteJid: remoteJid } }
-      });
-
-      // 2. Se vazio, tenta formato sem "key" (algumas versões da v2)
-      if (!messages || messages.length === 0) {
-        messages = await fetchAttempt({
-          where: { remoteJid: remoteJid }
-        });
+      // Tenta combinações: (Oficial, Aninhado), (Oficial, Plano), (Sem Suffix, Aninhado), (Sem Suffix, Plano)
+      let messages = await fetchAttempt(remoteJid, true);
+      if (messages.length === 0) messages = await fetchAttempt(remoteJid, false);
+      
+      if (messages.length === 0) {
+        const rawNumber = remoteJid.split('@')[0];
+        messages = await fetchAttempt(rawNumber, true);
+        if (messages.length === 0) messages = await fetchAttempt(rawNumber, false);
       }
 
       return messages || [];
