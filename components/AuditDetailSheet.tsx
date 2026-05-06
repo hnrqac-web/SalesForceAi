@@ -246,7 +246,11 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const hiddenObj = safeArray(auditoria.hidden_objections)
   const positiveSig = safeArray(auditoria.positive_signals)
 
-  const lines = extractTranscriptLines(auditoria.transcript_completo || auditoria.transcript)
+  const lines = extractTranscriptLines(
+    auditoria.transcript_completo || auditoria.transcript,
+    auditoria.vendedor_name,
+    auditoria.cliente_name
+  )
   const status = getStatus(auditoria.ai_score)
   const statusCls = getStatusColor(auditoria.ai_score)
   const sentimentCls = getSentimentColor(auditoria.lead_sentiment)

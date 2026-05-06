@@ -55,15 +55,51 @@ export function getInitials(name: string): string {
     .toUpperCase()
 }
 
+function normalizeSpeakerLabel(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/\*/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+}
+
 export function extractTranscriptLines(
-  transcript: string
+  transcript: string,
+  vendedorName?: string,
+  clienteName?: string
 ): { from: 'v' | 'c'; msg: string }[] {
   const lines = transcript.split('\n').filter((l) => l.trim())
+  const normalizedVendedor = vendedorName ? normalizeSpeakerLabel(vendedorName) : null
+  const normalizedCliente = clienteName ? normalizeSpeakerLabel(clienteName) : null
+
   return lines.map((line) => {
-    if (line.startsWith('Vendedor:')) {
-      return { from: 'v' as const, msg: line.replace('Vendedor:', '').trim() }
+    const trimmedLine = line.trim()
+    const labelMatch = trimmedLine.match(/^([^:]+):\s*(.*)$/)
+
+    if (!labelMatch) {
+      return { from: 'c' as const, msg: trimmedLine }
     }
-    return { from: 'c' as const, msg: line.replace('Cliente:', '').trim() }
+
+    const [, rawLabel, rawMessage] = labelMatch
+    const normalizedLabel = normalizeSpeakerLabel(rawLabel)
+    const msg = rawMessage.trim()
+
+    if (
+      normalizedLabel === 'vendedor' ||
+      (normalizedVendedor && normalizedLabel === normalizedVendedor)
+    ) {
+      return { from: 'v' as const, msg }
+    }
+
+    if (
+      normalizedLabel === 'cliente' ||
+      (normalizedCliente && normalizedLabel === normalizedCliente)
+    ) {
+      return { from: 'c' as const, msg }
+    }
+
+    return { from: 'c' as const, msg }
   })
 }
 
