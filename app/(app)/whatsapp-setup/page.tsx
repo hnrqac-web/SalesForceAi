@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { QrCode, Smartphone, RefreshCw, Info, Loader2, AlertCircle, Trash2, X, Edit2, Check, Globe, Link } from 'lucide-react'
 import { evolutionService } from '@/lib/evolution'
+import { useSellerNames } from '@/hooks/useSellerNames'
 
 export default function WhatsAppSetupPage() {
+  const { getInstanceDisplayName, setCustomSellerName } = useSellerNames()
   const [instances, setInstances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -112,12 +114,16 @@ export default function WhatsAppSetupPage() {
 
   const startEditing = (inst: any) => {
     setEditingId(inst.id || inst.name)
-    setNewName(inst.name || inst.instanceName)
+    setNewName(getInstanceDisplayName(inst))
   }
 
-  const saveName = () => {
+  const saveName = (inst: any) => {
+    setCustomSellerName(inst, newName)
+    if (selectedInstance && (selectedInstance.id || selectedInstance.name) === (inst.id || inst.name)) {
+      setSelectedInstance({ ...selectedInstance })
+    }
     setEditingId(null)
-    alert('Funcionalidade de apelido será vinculada ao seu banco de dados Supabase em breve!')
+    setNewName('')
   }
 
   return (
@@ -191,6 +197,7 @@ export default function WhatsAppSetupPage() {
           {instances.map((inst) => {
             const isOpen = inst.status === 'open' || inst.connectionStatus === 'open'
             const name = inst.name || inst.instanceName
+            const instanceId = inst.id || name
             return (
               <div key={name} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 flex items-center justify-between group">
                 <div className="flex items-center gap-4">
@@ -198,11 +205,36 @@ export default function WhatsAppSetupPage() {
                     {inst.profilePicUrl ? <img src={inst.profilePicUrl} className="w-full h-full object-cover" /> : <Smartphone className="text-slate-400 dark:text-slate-500" size={20} />}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-50">{inst.displayName || inst.profileName || name}</div>
+                    {editingId === instanceId ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newName}
+                          onChange={(e) => setNewName(e.target.value)}
+                          className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
+                        />
+                        <button type="button" onClick={() => saveName(inst)} className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                          <Check size={15} />
+                        </button>
+                        <button type="button" onClick={() => { setEditingId(null); setNewName('') }} className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors">
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-sm font-bold text-slate-900 dark:text-slate-50">{getInstanceDisplayName(inst)}</div>
+                    )}
                     <div className="text-[11px] text-slate-400 dark:text-slate-500">{formatPhone(inst.ownerJid || inst.owner || inst.number)}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => startEditing(inst)}
+                    className="p-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-amber-400 hover:border-amber-500/40 rounded-xl cursor-pointer transition-all"
+                    title="Editar nome exibido"
+                  >
+                    <Edit2 size={16} />
+                  </button>
                   <button 
                     type="button"
                     onClick={() => {
@@ -269,6 +301,29 @@ export default function WhatsAppSetupPage() {
               </div>
 
               <div className="space-y-3 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div className="space-y-2">
+                  <span className="text-slate-400 dark:text-slate-500 font-bold uppercase text-[11px]">Nome exibido</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editingId === (selectedInstance.id || selectedInstance.name) ? newName : getInstanceDisplayName(selectedInstance)}
+                      onChange={(e) => {
+                        setEditingId(selectedInstance.id || selectedInstance.name)
+                        setNewName(e.target.value)
+                      }}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveName(selectedInstance)}
+                      className="p-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-400 hover:text-emerald-300 rounded-xl transition-colors"
+                      title="Salvar nome exibido"
+                    >
+                      <Check size={16} />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">Se vazio, o sistema continua usando automaticamente o nome capturado do WhatsApp.</p>
+                </div>
                 <div className="flex justify-between text-[11px] items-center">
                   <span className="text-slate-400 dark:text-slate-500 font-bold uppercase">Nome da Instância</span>
                   <span className="text-slate-700 dark:text-slate-300 font-mono bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">

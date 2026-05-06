@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { evolutionService } from '@/lib/evolution'
 
 const SELLER_MAP_STORAGE_KEY = '@salesforce-ai:seller-map'
+const SELLER_ALIAS_STORAGE_KEY = '@salesforce-ai:seller-aliases'
 
 function normalizeDigits(value: string | null | undefined) {
   if (!value) return null
@@ -30,8 +31,34 @@ function loadCachedSellerMap() {
   }
 }
 
+function loadCachedSellerAliases() {
+  if (typeof window === 'undefined') return {}
+
+  try {
+    const cached = window.localStorage.getItem(SELLER_ALIAS_STORAGE_KEY)
+    if (!cached) return {}
+
+    const parsed = JSON.parse(cached)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function getInstanceAliasKey(inst: any) {
+  return (
+    inst?.instanceName ||
+    inst?.name ||
+    normalizeDigits(inst?.ownerJid) ||
+    normalizeDigits(inst?.owner) ||
+    normalizeDigits(inst?.number) ||
+    null
+  )
+}
+
 export function useSellerNames() {
   const [sellerMap, setSellerMap] = useState<Record<string, string>>(loadCachedSellerMap)
+  const [sellerAliases, setSellerAliases] = useState<Record<string, string>>(loadCachedSellerAliases)
 
   useEffect(() => {
     let active = true
@@ -43,7 +70,9 @@ export function useSellerNames() {
 
         const nextMap: Record<string, string> = {}
         instances.forEach((inst: any) => {
-          const displayName = inst.displayName || inst.profileName || null
+          const aliasKey = getInstanceAliasKey(inst)
+          const alias = aliasKey ? sellerAliases[aliasKey] : null
+          const displayName = alias || inst.displayName || inst.profileName || null
           if (!displayName) return
 
           const rawNames = [
@@ -77,7 +106,28 @@ export function useSellerNames() {
     return () => {
       active = false
     }
-  }, [])
+  }, [sellerAliases])
+
+  const setCustomSellerName = useMemo(
+    () => (inst: any, value: string) => {
+      const aliasKey = getInstanceAliasKey(inst)
+      if (!aliasKey || typeof window === 'undefined') return
+
+      const trimmedValue = value.trim()
+      const nextAliases = {
+        ...sellerAliases,
+        ...(trimmedValue ? { [aliasKey]: trimmedValue } : {}),
+      }
+
+      if (!trimmedValue) {
+        delete nextAliases[aliasKey]
+      }
+
+      window.localStorage.setItem(SELLER_ALIAS_STORAGE_KEY, JSON.stringify(nextAliases))
+      setSellerAliases(nextAliases)
+    },
+    [sellerAliases]
+  )
 
   const getSellerDisplayName = useMemo(
     () => (name?: string | null) => {
@@ -95,5 +145,15 @@ export function useSellerNames() {
     [sellerMap]
   )
 
-  return { sellerMap, getSellerDisplayName }
+  const getInstanceDisplayName = useMemo(
+    () => (inst: any) => {
+      const aliasKey = getInstanceAliasKey(inst)
+      if (aliasKey && sellerAliases[aliasKey]) return sellerAliases[aliasKey]
+
+      return inst?.displayName || getSellerDisplayName(inst?.instanceName || inst?.name || inst?.owner || inst?.number)
+    },
+    [getSellerDisplayName, sellerAliases]
+  )
+
+  return { sellerMap, getSellerDisplayName, getInstanceDisplayName, setCustomSellerName }
 }
