@@ -11,21 +11,30 @@ export async function POST(req: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // 1. Busca instâncias
+    console.log('[Sync] Buscando instâncias...')
     const instResponse = await fetch(`${evolutionUrl}/instance/fetchInstances`, {
       headers: { 'apikey': evolutionKey! }
     })
     const instData = await instResponse.json()
     const instances = Array.isArray(instData) ? instData : (instData?.data || instData?.response || [])
+    
+    console.log(`[Sync] Encontradas ${instances.length} instâncias.`)
 
     let totalImported = 0
-    const activeInstances = instances.filter((i: any) => (i.status === 'open' || i.connectionStatus === 'open'))
+    // Processa todas as instâncias encontradas
+    for (const inst of instances) {
+      const name = inst.instanceName || inst.name || inst.instance?.instanceName
+      const status = inst.status || inst.connectionStatus || inst.instance?.status
+      
+      console.log(`[Sync] Processando instância: ${name}, Status: ${status}`)
+      
+      if (!name) continue;
 
-    for (const inst of activeInstances) {
-      const name = inst.instanceName || inst.name
       const owner = inst.owner || inst.instance?.owner
       const vendedorId = owner ? owner.split('@')[0].replace(/\D/g, '') : name
 
-      // 2. Busca chats recentes da instância
+      // 2. Tenta buscar CHATS
+      console.log(`[Sync] Buscando chats para ${name}...`)
       const chatsResponse = await fetch(`${evolutionUrl}/chat/findChats/${name}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': evolutionKey! },
@@ -33,24 +42,44 @@ export async function POST(req: NextRequest) {
       })
       
       const chatsData = await chatsResponse.json()
-      const chats = Array.isArray(chatsData) ? chatsData : (chatsData?.data || chatsData?.response || [])
-      const recentChats = chats.slice(0, 15)
+      let chats = Array.isArray(chatsData) ? chatsData : (chatsData?.data || chatsData?.response || [])
+      
+      // 3. Fallback para CONTATOS se chats estiver vazio
+      if (chats.length === 0) {
+        console.log(`[Sync] Chats vazios para ${name}, tentando contatos...`)
+        const contactsResponse = await fetch(`${evolutionUrl}/chat/findContacts/${name}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': evolutionKey! },
+          body: JSON.stringify({})
+        })
+        const contactsData = await contactsResponse.json()
+        chats = Array.isArray(contactsData) ? contactsData : (contactsData?.data || contactsData?.response || [])
+      }
 
-      // 3. Processa cada chat
-      await Promise.all(recentChats.map(async (chat: any) => {
-        const jid = chat.id || chat.remoteJid
+      console.log(`[Sync] Encontrados ${chats.length} registros para ${name}`)
+      const recentToProcess = chats.slice(0, 20)
+
+      // 4. Processa cada registro
+      for (const chat of recentToProcess) {
+        const jid = chat.id || chat.remoteJid || chat.jid
+        if (!jid) continue;
+
         const clienteNome = chat.name || chat.pushName || jid.split('@')[0]
         
-        const { error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
-          p_cliente_jid: jid,
-          p_cliente_name: clienteNome,
-          p_vendedor_name: vendedorId,
-          p_message: 'Sincronização manual via API',
-          p_from_me: true
-        })
-        
-        if (!rpcError) totalImported++
-      }))
+        try {
+          const { error: rpcError } = await supabase.rpc('add_message_to_auditoria', {
+            p_cliente_jid: jid,
+            p_cliente_name: clienteNome,
+            p_vendedor_name: vendedorId,
+            p_message: 'Sincronização manual (Resiliente)',
+            p_from_me: true
+          })
+          
+          if (!rpcError) totalImported++
+        } catch (e) {
+          console.error(`[Sync] Erro ao processar JID ${jid}:`, e)
+        }
+      }
     }
 
     return NextResponse.json({ success: true, imported: totalImported })
