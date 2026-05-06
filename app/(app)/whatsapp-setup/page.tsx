@@ -198,7 +198,7 @@ export default function WhatsAppSetupPage() {
                     {inst.profilePicUrl ? <img src={inst.profilePicUrl} className="w-full h-full object-cover" /> : <Smartphone className="text-slate-400 dark:text-slate-500" size={20} />}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-50">{inst.profileName || name}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-slate-50">{inst.displayName || inst.profileName || name}</div>
                     <div className="text-[11px] text-slate-400 dark:text-slate-500">{formatPhone(inst.ownerJid || inst.owner || inst.number)}</div>
                   </div>
                 </div>

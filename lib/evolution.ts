@@ -47,6 +47,26 @@ function normalizeInstancesResponse(data: any) {
   return Array.isArray(list) ? list.map(normalizeInstance) : []
 }
 
+function normalizeDigits(value: string | null | undefined) {
+  if (!value) return null
+  const digits = value.replace(/\D/g, '')
+  return digits || null
+}
+
+function buildInstanceDisplayName(inst: any, duplicateNames: Set<string>) {
+  const profileName = inst.profileName || null
+  const digits = normalizeDigits(inst.number || inst.ownerJid || inst.owner)
+  const suffix = digits && digits.length >= 4 ? digits.slice(-4) : null
+
+  if (profileName && duplicateNames.has(profileName) && suffix) {
+    return `${profileName} · ${suffix}`
+  }
+
+  if (profileName) return profileName
+  if (suffix) return `WhatsApp · ${suffix}`
+  return inst.name || inst.instanceName || 'Instância sem nome'
+}
+
 export const evolutionService = {
   /**
    * Lista todas as instâncias
@@ -109,7 +129,23 @@ export const evolutionService = {
         }
       }))
 
-      return processedInstances
+      const profileCounts = processedInstances.reduce((acc: Record<string, number>, inst: any) => {
+        if (inst.profileName) {
+          acc[inst.profileName] = (acc[inst.profileName] || 0) + 1
+        }
+        return acc
+      }, {})
+
+      const duplicateNames = new Set(
+        Object.entries(profileCounts)
+          .filter(([, count]) => count > 1)
+          .map(([name]) => name)
+      )
+
+      return processedInstances.map((inst) => ({
+        ...inst,
+        displayName: buildInstanceDisplayName(inst, duplicateNames),
+      }))
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error)
       return []

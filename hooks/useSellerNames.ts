@@ -43,7 +43,7 @@ export function useSellerNames() {
 
         const nextMap: Record<string, string> = {}
         instances.forEach((inst: any) => {
-          const displayName = inst.profileName || null
+          const displayName = inst.displayName || inst.profileName || null
           if (!displayName) return
 
           const rawNames = [
