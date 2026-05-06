@@ -3,14 +3,35 @@
 import { useEffect, useMemo, useState } from 'react'
 import { evolutionService } from '@/lib/evolution'
 
+const SELLER_MAP_STORAGE_KEY = '@salesforce-ai:seller-map'
+
 function normalizeDigits(value: string | null | undefined) {
   if (!value) return null
   const digits = value.replace(/\D/g, '')
   return digits || null
 }
 
+function looksLikeTechnicalSellerName(value: string | null | undefined) {
+  if (!value) return false
+  return /^admin-\d+$/i.test(value) || /^\d{8,}$/.test(value)
+}
+
+function loadCachedSellerMap() {
+  if (typeof window === 'undefined') return {}
+
+  try {
+    const cached = window.localStorage.getItem(SELLER_MAP_STORAGE_KEY)
+    if (!cached) return {}
+
+    const parsed = JSON.parse(cached)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
 export function useSellerNames() {
-  const [sellerMap, setSellerMap] = useState<Record<string, string>>({})
+  const [sellerMap, setSellerMap] = useState<Record<string, string>>(loadCachedSellerMap)
 
   useEffect(() => {
     let active = true
@@ -41,6 +62,10 @@ export function useSellerNames() {
           })
         })
 
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(SELLER_MAP_STORAGE_KEY, JSON.stringify(nextMap))
+        }
+
         setSellerMap(nextMap)
       } catch (error) {
         console.error('Failed to load seller names', error)
@@ -57,7 +82,15 @@ export function useSellerNames() {
   const getSellerDisplayName = useMemo(
     () => (name?: string | null) => {
       if (!name) return '—'
-      return sellerMap[name] || sellerMap[normalizeDigits(name || '') || ''] || name
+
+      const mappedName = sellerMap[name] || sellerMap[normalizeDigits(name || '') || '']
+      if (mappedName) return mappedName
+
+      if (looksLikeTechnicalSellerName(name)) {
+        return 'Carregando vendedor...'
+      }
+
+      return name
     },
     [sellerMap]
   )
