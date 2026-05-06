@@ -83,7 +83,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
     try {
       // 1. Tenta Descoberta Automática se o JID estiver faltando
       if (!jid) {
-        toast.info('Tentando localizar o número do cliente automaticamente...')
+        toast.info('Buscando número do cliente no WhatsApp...')
         const discoveredJid = await evolutionService.findJidByName(auditoria.vendedor_name, auditoria.cliente_name)
         if (discoveredJid) {
           jid = discoveredJid
@@ -98,7 +98,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
       // Se ainda não tem JID, pede para o usuário digitar o número
       if (!jid) {
-        const input = window.prompt('Não conseguimos localizar o número do cliente automaticamente. Por favor, digite o número do WhatsApp com DDD:')
+        const input = window.prompt('Não conseguimos localizar o chat "' + auditoria.cliente_name + '" automaticamente. Por favor, digite o número do WhatsApp com DDD:')
         if (!input) {
           setIsSyncing(false)
           return
@@ -123,11 +123,11 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
       const messages = response?.messages || []
       if (!Array.isArray(messages) || messages.length === 0) {
-        toast.info('Nenhuma mensagem encontrada para este número no WhatsApp.')
+        toast.info('Chat localizado, mas nenhuma mensagem foi encontrada.')
         return
       }
 
-      // 2. Formata o novo transcript
+      // 3. Formata o novo transcript
       const formattedTranscript = messages
         .reverse()
         .map((m: any) => {
@@ -136,28 +136,28 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                        m.message?.extendedTextMessage?.text || 
                        m.message?.imageMessage?.caption || 
                        m.message?.videoMessage?.caption ||
-                       ' (Mídia ou Mensagem não suportada)'
+                       ' (Mídia)'
           return `${fromMe ? 'Vendedor' : 'Cliente'}: ${text}`
         })
         .join('\n')
 
-      // 3. Atualiza o banco de dados (também salva o JID para a próxima vez)
+      // 4. Atualiza o banco de dados
       const { error } = await supabase
         .from('auditorias')
         .update({ 
           transcript_completo: formattedTranscript,
-          cliente_jid: jid.split('@')[0] // Salva apenas o número puro
+          cliente_jid: jid.split('@')[0]
         })
         .eq('id', auditoria.id)
 
       if (error) throw error
 
-      toast.success('Histórico sincronizado com sucesso!')
-      // Recarrega os dados locais se necessário ou avisa o usuário
-      setTimeout(() => window.location.reload(), 1500)
-    } catch (err) {
+      toast.success('Sincronização concluída!')
+      setTimeout(() => window.location.reload(), 1000)
+    } catch (err: any) {
       console.error('Erro na sincronização:', err)
-      toast.error('Erro ao sincronizar. Verifique se o número e a instância estão corretos.')
+      const errorMsg = err.details?.message || err.message || 'Erro desconhecido'
+      toast.error(`Falha no Sync: ${errorMsg}`)
     } finally {
       setIsSyncing(false)
     }
