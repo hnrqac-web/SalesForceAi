@@ -5,6 +5,7 @@ import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, extractTranscriptLines } from '@/lib/utils'
 import { X, Copy, Check, Zap, MessageSquare, Brain, ChevronRight, Target, Activity, ThumbsUp, ThumbsDown, AlertTriangle, AlertCircle, Loader2, Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 interface Props {
   auditoria: Auditoria | null
@@ -47,12 +48,11 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const [copiedMsg, setCopiedMsg] = useState(false)
   const [tab, setTab] = useState<'overview' | 'transcript' | 'behavior'>('overview')
   const [isClosing, setIsClosing] = useState(false)
+  const [showConfirmClose, setShowConfirmClose] = useState(false)
 
   if (!auditoria) return null
   
-  const handleCloseSession = async () => {
-    if (!confirm('Deseja realmente finalizar este atendimento? Novas mensagens do cliente criarão uma nova auditoria separada.')) return
-    
+  const executeCloseSession = async () => {
     setIsClosing(true)
     try {
       const { error } = await supabase
@@ -62,12 +62,18 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       
       if (error) throw error
       onClose()
+      toast.success('Atendimento finalizado com sucesso!')
     } catch (err) {
       console.error('Erro ao finalizar:', err)
-      alert('Erro ao finalizar atendimento.')
+      toast.error('Erro ao finalizar atendimento.')
     } finally {
       setIsClosing(false)
+      setShowConfirmClose(false)
     }
+  }
+
+  const handleCloseSession = () => {
+    setShowConfirmClose(true)
   }
   
   const safeArray = (val: any): string[] => {
@@ -401,6 +407,38 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
           )}
         </div>
       </div>
+
+      {/* Confirm Modal */}
+      {showConfirmClose && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <AlertTriangle size={24} />
+              <h3 className="font-bold text-lg">Finalizar Atendimento?</h3>
+            </div>
+            <p className="text-sm text-slate-400 mb-6">
+              Deseja realmente finalizar este atendimento? Novas mensagens do cliente criarão uma nova auditoria separada.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmClose(false)}
+                disabled={isClosing}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeCloseSession}
+                disabled={isClosing}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {isClosing && <Loader2 size={14} className="animate-spin" />}
+                Sim, Finalizar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
