@@ -191,7 +191,7 @@ export const evolutionService = {
   /**
    * Busca mensagens de um chat (histórico)
    */
-  async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
+  async fetchMessages(instanceName: string, remoteJid: string, count: number = 20): Promise<any> {
     try {
       // Tenta o formato padrão da documentação (v2)
       const fetchAttempt = async (jid: string, nested: boolean) => {

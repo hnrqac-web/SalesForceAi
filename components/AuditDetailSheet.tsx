@@ -135,7 +135,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       const cleanJid = jid.includes('@') ? jid : `${jid.split('@')[0]}@s.whatsapp.net`
 
       // 3. Busca histórico da Evolution API
-      const response = await evolutionService.fetchMessages(
+      const response: any = await evolutionService.fetchMessages(
         instanceName, 
         cleanJid,
         100 // Aumentado para 100 para pegar mais contexto
