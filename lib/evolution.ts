@@ -5,6 +5,22 @@
 
 function normalizeInstance(rawInstance: any) {
   const nested = rawInstance?.instance || {}
+  const profileName =
+    rawInstance?.profileName ||
+    nested?.profileName ||
+    rawInstance?.pushName ||
+    nested?.pushName ||
+    rawInstance?.pushname ||
+    nested?.pushname ||
+    rawInstance?.profile?.name ||
+    nested?.profile?.name ||
+    rawInstance?.profile?.pushName ||
+    nested?.profile?.pushName ||
+    rawInstance?.profile?.pushname ||
+    nested?.profile?.pushname ||
+    rawInstance?.user?.name ||
+    nested?.user?.name ||
+    null
 
   return {
     ...rawInstance,
@@ -13,7 +29,7 @@ function normalizeInstance(rawInstance: any) {
     instanceId: rawInstance?.instanceId || nested?.instanceId,
     name: rawInstance?.name || rawInstance?.instanceName || nested?.name || nested?.instanceName,
     instanceName: rawInstance?.instanceName || nested?.instanceName,
-    profileName: rawInstance?.profileName || nested?.profileName || rawInstance?.pushName || nested?.pushName,
+    profileName,
     profilePicUrl: rawInstance?.profilePicUrl || rawInstance?.profilePictureUrl || nested?.profilePicUrl || nested?.profilePictureUrl,
     owner: rawInstance?.owner || nested?.owner,
     ownerJid: rawInstance?.ownerJid || nested?.ownerJid || rawInstance?.owner || nested?.owner,
@@ -62,7 +78,18 @@ export const evolutionService = {
             
             const deepInstance = stateData?.instance || stateData?.data?.instance
             owner = deepInstance?.owner || deepInstance?.user?.id || stateData?.user?.id || owner
-            profileName = deepInstance?.profileName || deepInstance?.pushname || profileName
+            profileName =
+              deepInstance?.profileName ||
+              deepInstance?.pushname ||
+              deepInstance?.pushName ||
+              deepInstance?.profile?.name ||
+              deepInstance?.profile?.pushName ||
+              deepInstance?.profile?.pushname ||
+              deepInstance?.user?.name ||
+              stateData?.user?.name ||
+              stateData?.pushName ||
+              stateData?.pushname ||
+              profileName
             number = deepInstance?.number || deepInstance?.owner?.split?.('@')?.[0] || number
           } catch (e) {
             console.error(`Erro no deep check de ${name}:`, e)
