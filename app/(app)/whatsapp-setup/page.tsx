@@ -5,6 +5,8 @@ import { QrCode, Smartphone, RefreshCw, Info, Loader2, AlertCircle, Trash2, X, E
 import { evolutionService } from '@/lib/evolution'
 import { useSellerNames } from '@/hooks/useSellerNames'
 
+const WEBHOOK_SETTINGS_STORAGE_KEY = '@salesforce-ai:webhook-settings'
+
 export default function WhatsAppSetupPage() {
   const { getInstanceDisplayName, setCustomSellerName } = useSellerNames()
   const [instances, setInstances] = useState<any[]>([])
@@ -16,8 +18,39 @@ export default function WhatsAppSetupPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
   const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookEnabled, setWebhookEnabled] = useState(true)
   const [savingWebhook, setSavingWebhook] = useState(false)
   const [webhookStatus, setWebhookStatus] = useState<{type: 'success' | 'error', message: string} | null>(null)
+
+  const getWebhookStorageKey = (inst: any) => inst?.instanceName || inst?.name || inst?.id || null
+
+  const loadWebhookSettings = (inst: any) => {
+    if (typeof window === 'undefined') return { url: '', enabled: true }
+
+    try {
+      const key = getWebhookStorageKey(inst)
+      const raw = window.localStorage.getItem(WEBHOOK_SETTINGS_STORAGE_KEY)
+      const parsed = raw ? JSON.parse(raw) : {}
+      return key && parsed[key] ? parsed[key] : { url: '', enabled: true }
+    } catch {
+      return { url: '', enabled: true }
+    }
+  }
+
+  const persistWebhookSettings = (inst: any, settings: { url: string; enabled: boolean }) => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const key = getWebhookStorageKey(inst)
+      if (!key) return
+      const raw = window.localStorage.getItem(WEBHOOK_SETTINGS_STORAGE_KEY)
+      const parsed = raw ? JSON.parse(raw) : {}
+      parsed[key] = settings
+      window.localStorage.setItem(WEBHOOK_SETTINGS_STORAGE_KEY, JSON.stringify(parsed))
+    } catch {
+      return
+    }
+  }
 
   const loadInstances = async () => {
     try {
@@ -74,7 +107,7 @@ export default function WhatsAppSetupPage() {
     console.log('--- BOTÃO CLICADO ---');
     setWebhookStatus(null);
     
-    if (!webhookUrl) {
+    if (!webhookUrl && webhookEnabled) {
       console.log('Erro: URL vazia');
       setWebhookStatus({ type: 'error', message: 'Por favor, cole a URL do n8n.' });
       return;
@@ -90,8 +123,9 @@ export default function WhatsAppSetupPage() {
 
     setSavingWebhook(true);
     try {
-      await evolutionService.setWebhook(instanceName, webhookUrl);
-      setWebhookStatus({ type: 'success', message: 'Configurado com sucesso!' });
+      await evolutionService.setWebhook(instanceName, webhookUrl, webhookEnabled);
+      persistWebhookSettings(selectedInstance, { url: webhookUrl, enabled: webhookEnabled })
+      setWebhookStatus({ type: 'success', message: webhookEnabled ? 'Webhook configurado com sucesso!' : 'Webhook desabilitado com sucesso!' });
       console.log('Configuração salva com sucesso no servidor');
     } catch (err: any) {
       console.error('Falha no salvamento:', err);
@@ -127,6 +161,13 @@ export default function WhatsAppSetupPage() {
     setEditingId(null)
     setNewName('')
   }
+
+  useEffect(() => {
+    if (!selectedInstance) return
+    const settings = loadWebhookSettings(selectedInstance)
+    setWebhookUrl(settings.url || '')
+    setWebhookEnabled(settings.enabled ?? true)
+  }, [selectedInstance])
 
   return (
     <div className="relative min-h-screen">
@@ -282,12 +323,25 @@ export default function WhatsAppSetupPage() {
                 )}
 
                 <div className="space-y-3">
+                  <label className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs text-slate-700 dark:text-slate-300">
+                    <span>Webhook habilitado</span>
+                    <button
+                      type="button"
+                      onClick={() => setWebhookEnabled((value) => !value)}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${webhookEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${webhookEnabled ? 'translate-x-5' : 'translate-x-0.5'}`}
+                      />
+                    </button>
+                  </label>
                   <input 
                     type="text"
                     placeholder="https://seu-n8n.com/webhook/..."
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-all"
+                    disabled={!webhookEnabled}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 transition-all disabled:opacity-50"
                   />
                   <button 
                     type="button"
@@ -297,7 +351,7 @@ export default function WhatsAppSetupPage() {
                     }}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2"
                   >
-                    {savingWebhook ? <><Loader2 size={14} className="animate-spin" /> Salvando...</> : 'Salvar Webhook'}
+                    {savingWebhook ? <><Loader2 size={14} className="animate-spin" /> Salvando...</> : webhookEnabled ? 'Salvar Webhook' : 'Desabilitar Webhook'}
                   </button>
                 </div>
               </div>

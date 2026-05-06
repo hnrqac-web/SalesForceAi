@@ -215,7 +215,7 @@ export const evolutionService = {
   /**
    * Configura o Webhook para uma instância
    */
-  async setWebhook(instanceName: string, url: string) {
+  async setWebhook(instanceName: string, url: string, enabled: boolean = true) {
     try {
       console.log(`[FRONTEND] Configurando Webhook para ${instanceName}`);
       const response = await fetch('/api/evolution', {
@@ -228,7 +228,7 @@ export const evolutionService = {
           method: 'POST',
           body: {
             webhook: {
-              enabled: true,
+              enabled,
               url: url,
               webhook_by_events: false,
               events: [
