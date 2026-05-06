@@ -193,29 +193,41 @@ export const evolutionService = {
    */
   async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
     try {
-      const response = await fetch('/api/evolution', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          endpoint: `/chat/findMessages/${instanceName}`,
+      // Tenta o formato padrão da documentação (v2)
+      const fetchAttempt = async (bodyFormat: any) => {
+        const response = await fetch('/api/evolution', {
           method: 'POST',
-          body: {
-            where: {
-              key: {
-                remoteJid: remoteJid
-              }
-            }
-          }
-        }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: `/chat/findMessages/${instanceName}`,
+            method: 'POST',
+            body: bodyFormat
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) return null;
+        
+        // Extrai o array de mensagens
+        if (Array.isArray(data)) return data;
+        if (data?.messages && Array.isArray(data.messages)) return data.messages;
+        if (data?.data && Array.isArray(data.data)) return data.data;
+        if (data?.response && Array.isArray(data.response)) return data.response;
+        return [];
+      };
+
+      // 1. Tenta formato com "key" (oficial)
+      let messages = await fetchAttempt({
+        where: { key: { remoteJid: remoteJid } }
       });
 
-      const data = await response.json();
-      if (!response.ok) throw data;
-      
-      // A v2 retorna as mensagens dentro de data, pode precisar de ajuste se o formato mudar
-      return data;
+      // 2. Se vazio, tenta formato sem "key" (algumas versões da v2)
+      if (!messages || messages.length === 0) {
+        messages = await fetchAttempt({
+          where: { remoteJid: remoteJid }
+        });
+      }
+
+      return messages || [];
     } catch (error) {
       console.error('Erro ao buscar histórico (v2):', error);
       throw error;
