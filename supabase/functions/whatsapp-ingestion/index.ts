@@ -13,11 +13,13 @@ function pickFirstString(...values: unknown[]) {
 }
 
 function extractSellerName(body: any, fromMe: boolean) {
-  const instance = typeof body?.instance === 'object' ? body.instance : null
-  const nestedInstance = typeof instance?.instance === 'object' ? instance.instance : null
+  const instance = body?.instance
+  const instanceName = typeof instance === 'string' ? instance : (instance?.name || instance?.instanceName)
+  const nestedInstance = typeof instance === 'object' ? instance?.instance : null
   const dataInstance = typeof body?.data?.instance === 'object' ? body.data.instance : null
 
   return pickFirstString(
+    instanceName,
     instance?.profileName,
     nestedInstance?.profileName,
     dataInstance?.profileName,
@@ -44,7 +46,8 @@ serve(async (req) => {
     const remoteJid = body.data?.key?.remoteJid || ''
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido'
     const vendedorNome = extractSellerName(body, fromMe)
-    const clienteNome = (body.data?.pushName || clienteId)
+    // Se for do vendedor, não usamos o pushName (que seria o nome do próprio vendedor) como nome do cliente
+    const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
