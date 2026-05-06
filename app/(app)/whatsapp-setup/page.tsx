@@ -112,14 +112,16 @@ export default function WhatsAppSetupPage() {
     return `+${clean}`
   }
 
+  const getInstanceEditKey = (inst: any) => inst?.id || inst?.name || inst?.instanceName || null
+
   const startEditing = (inst: any) => {
-    setEditingId(inst.id || inst.name)
+    setEditingId(getInstanceEditKey(inst))
     setNewName(getInstanceDisplayName(inst))
   }
 
   const saveName = (inst: any) => {
     setCustomSellerName(inst, newName)
-    if (selectedInstance && (selectedInstance.id || selectedInstance.name) === (inst.id || inst.name)) {
+    if (selectedInstance && getInstanceEditKey(selectedInstance) === getInstanceEditKey(inst)) {
       setSelectedInstance({ ...selectedInstance })
     }
     setEditingId(null)
@@ -197,7 +199,7 @@ export default function WhatsAppSetupPage() {
           {instances.map((inst) => {
             const isOpen = inst.status === 'open' || inst.connectionStatus === 'open'
             const name = inst.name || inst.instanceName
-            const instanceId = inst.id || name
+            const instanceId = getInstanceEditKey(inst)
             return (
               <div key={name} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 flex items-center justify-between group">
                 <div className="flex items-center gap-4">
@@ -308,7 +310,7 @@ export default function WhatsAppSetupPage() {
                       type="text"
                       value={editingId === (selectedInstance.id || selectedInstance.name) ? newName : getInstanceDisplayName(selectedInstance)}
                       onChange={(e) => {
-                        setEditingId(selectedInstance.id || selectedInstance.name)
+                        setEditingId(getInstanceEditKey(selectedInstance))
                         setNewName(e.target.value)
                       }}
                       className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
