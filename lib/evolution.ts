@@ -152,49 +152,37 @@ export const evolutionService = {
     }
   },
   /**
-   * Busca todas as instâncias disponíveis
-   */
-  async fetchInstances() {
-    try {
-      const response = await fetch('/api/evolution?endpoint=/instance/fetchInstances', {
-        method: 'GET',
-      });
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
-    } catch (error) {
-      console.error('Erro ao buscar instâncias:', error);
-      return [];
-    }
-  },
-
-  /**
    * Tenta encontrar a instância correta pelo nome, número ou status
    */
   async findInstanceByName(nameOrNumber: string) {
     try {
-      const instances = await this.fetchInstances();
-      if (!Array.isArray(instances)) return null;
+      const instances = await this.getInstances();
+      if (!Array.isArray(instances) || instances.length === 0) return null;
 
       const cleanTarget = nameOrNumber.replace(/\D/g, '');
 
       // 1. Tenta por nome exato (mais rápido)
-      const exactName = instances.find((inst: any) => inst.instanceName === nameOrNumber);
-      if (exactName) return exactName.instanceName;
+      const exactName = instances.find((inst: any) => 
+        inst.instanceName === nameOrNumber || inst.name === nameOrNumber
+      );
+      if (exactName) return exactName.instanceName || exactName.name;
 
       // 2. Tenta encontrar por número (owner) se o alvo for um número
       if (cleanTarget.length > 8) {
-        const byOwner = instances.find((inst: any) => inst.owner?.includes(cleanTarget));
-        if (byOwner) return byOwner.instanceName;
+        const byOwner = instances.find((inst: any) => 
+          String(inst.owner || inst.ownerJid || inst.number || '').includes(cleanTarget)
+        );
+        if (byOwner) return byOwner.instanceName || byOwner.name;
       }
 
       // 3. Tenta encontrar pelo nome da instância (parcial)
       const byName = instances.find((inst: any) => 
         inst.instanceName?.toLowerCase().includes(nameOrNumber.toLowerCase()) || 
-        nameOrNumber.toLowerCase().includes(inst.instanceName?.toLowerCase())
+        inst.name?.toLowerCase().includes(nameOrNumber.toLowerCase()) ||
+        nameOrNumber.toLowerCase().includes(inst.instanceName?.toLowerCase() || '')
       );
 
-      return byName?.instanceName || null;
+      return byName?.instanceName || byName?.name || null;
     } catch (error) {
       return null;
     }

@@ -87,10 +87,10 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       
       // Se não achou pelo nome/número salvo, tenta pegar a primeira instância conectada como fallback
       if (!instanceName) {
-        const instances = await evolutionService.fetchInstances()
-        const firstOpen = Array.isArray(instances) ? instances.find((i: any) => i.status === 'open') : null
+        const instances = await evolutionService.getInstances()
+        const firstOpen = Array.isArray(instances) ? instances.find((i: any) => i.status === 'open' || i.connectionStatus === 'open') : null
         if (firstOpen) {
-          instanceName = firstOpen.instanceName
+          instanceName = firstOpen.instanceName || firstOpen.name
           console.log(`Usando fallback de instância: ${instanceName}`)
         }
       }
