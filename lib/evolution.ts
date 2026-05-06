@@ -161,25 +161,25 @@ export const evolutionService = {
 
       const cleanTarget = nameOrNumber.replace(/\D/g, '');
 
-      // 1. Tenta por nome exato (mais rápido)
+      // 1. Tenta por número (owner) - MAIS SEGURO
+      if (cleanTarget.length > 8) {
+        const byOwner = instances.find((inst: any) => {
+          const ownerNum = String(inst.owner || inst.ownerJid || inst.number || '').split('@')[0].replace(/\D/g, '');
+          return ownerNum === cleanTarget;
+        });
+        if (byOwner) return byOwner.instanceName || byOwner.name;
+      }
+
+      // 2. Tenta por nome exato
       const exactName = instances.find((inst: any) => 
         inst.instanceName === nameOrNumber || inst.name === nameOrNumber
       );
       if (exactName) return exactName.instanceName || exactName.name;
 
-      // 2. Tenta encontrar por número (owner) se o alvo for um número
-      if (cleanTarget.length > 8) {
-        const byOwner = instances.find((inst: any) => 
-          String(inst.owner || inst.ownerJid || inst.number || '').includes(cleanTarget)
-        );
-        if (byOwner) return byOwner.instanceName || byOwner.name;
-      }
-
-      // 3. Tenta encontrar pelo nome da instância (parcial)
+      // 3. Tenta encontrar pelo nome da instância (parcial) como último recurso
       const byName = instances.find((inst: any) => 
         inst.instanceName?.toLowerCase().includes(nameOrNumber.toLowerCase()) || 
-        inst.name?.toLowerCase().includes(nameOrNumber.toLowerCase()) ||
-        nameOrNumber.toLowerCase().includes(inst.instanceName?.toLowerCase() || '')
+        inst.name?.toLowerCase().includes(nameOrNumber.toLowerCase())
       );
 
       return byName?.instanceName || byName?.name || null;

@@ -268,14 +268,30 @@ export default function WhatsAppSetupPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between text-[11px]">
+              <div className="space-y-3 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div className="flex justify-between text-[11px] items-center">
                   <span className="text-slate-400 dark:text-slate-500 font-bold uppercase">Nome da Instância</span>
-                  <span className="text-slate-700 dark:text-slate-300 font-mono">{selectedInstance.name || selectedInstance.instanceName}</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-mono bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">
+                    {selectedInstance.name || selectedInstance.instanceName}
+                  </span>
                 </div>
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-[11px] items-center">
+                  <span className="text-slate-400 dark:text-slate-500 font-bold uppercase">Vendedor (WhatsApp)</span>
+                  <span className="text-blue-400 font-bold">
+                    {formatPhone(selectedInstance.ownerJid || selectedInstance.owner || selectedInstance.number)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[11px] items-center">
+                  <span className="text-slate-400 dark:text-slate-500 font-bold uppercase">JID do Dono</span>
+                  <span className="text-slate-500 dark:text-slate-400 truncate max-w-[180px]">
+                    {selectedInstance.ownerJid || selectedInstance.owner || 'Não disponível'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[11px] items-center">
                   <span className="text-slate-400 dark:text-slate-500 font-bold uppercase">Status</span>
-                  <span className="text-emerald-400 font-bold">{selectedInstance.status || selectedInstance.connectionStatus}</span>
+                  <span className={`font-bold ${selectedInstance.status === 'open' || selectedInstance.connectionStatus === 'open' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {(selectedInstance.status || selectedInstance.connectionStatus || 'Desconhecido').toUpperCase()}
+                  </span>
                 </div>
               </div>
 
