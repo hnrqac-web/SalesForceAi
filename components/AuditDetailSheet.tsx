@@ -138,28 +138,42 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       const response = await evolutionService.fetchMessages(
         instanceName, 
         cleanJid,
-        50
+        100 // Aumentado para 100 para pegar mais contexto
       )
 
-      // Na v2, a resposta é um array direto de mensagens
-      const messages = Array.isArray(response) ? response : (response?.messages || [])
+      console.log('Response da Evolution API:', response)
+
+      // Garante que temos um array de mensagens, lidando com diferentes formatos da v1 e v2
+      let messagesArray: any[] = []
+      if (Array.isArray(response)) {
+        messagesArray = response
+      } else if (response && Array.isArray(response.messages)) {
+        messagesArray = response.messages
+      } else if (response && response.response && Array.isArray(response.response)) {
+        messagesArray = response.response
+      } else if (response && response.data && Array.isArray(response.data)) {
+        messagesArray = response.data
+      }
       
-      if (messages.length === 0) {
-        toast.info('Chat localizado, mas nenhuma mensagem foi encontrada.')
+      if (messagesArray.length === 0) {
+        toast.info('Chat localizado, mas nenhuma mensagem nova foi encontrada.')
         return
       }
 
-      // 3. Formata o novo transcript
-      const formattedTranscript = [...messages]
+      // 3. Formata o novo transcript de forma segura
+      const formattedTranscript = [...messagesArray]
         .reverse()
         .map((m: any) => {
           const fromMe = m.key?.fromMe
+          // Tenta extrair o texto de várias formas possíveis na v2
           const text = m.message?.conversation || 
                        m.message?.extendedTextMessage?.text || 
                        m.message?.imageMessage?.caption || 
                        m.message?.videoMessage?.caption ||
                        m.content ||
-                       ' (Mídia)'
+                       m.text ||
+                       (m.message?.audioMessage ? ' (Áudio)' : ' (Mídia)')
+          
           return `${fromMe ? 'Vendedor' : 'Cliente'}: ${text}`
         })
         .join('\n')
