@@ -13,8 +13,9 @@ type SortDir = 'asc' | 'desc'
 const PAGE_SIZE = 15
 
 export default function AuditoriasPage() {
-  const { data, isLoading, error } = useAuditorias()
-  const [selected, setSelected] = useState<Auditoria | null>(null)
+  const { data, isLoading, error, refetch } = useAuditorias()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = data.find(a => a.id === selectedId) || null
   const [filterVendedor, setFilterVendedor] = useState('')
   const [filterData, setFilterData] = useState('')
   const [filterCliente, setFilterCliente] = useState('')
@@ -77,6 +78,15 @@ export default function AuditoriasPage() {
           </p>
         </div>
         {isLoading && <Loader2 size={16} className="text-blue-500 animate-spin mb-1" />}
+        {!isLoading && (
+          <button 
+            onClick={() => refetch()} 
+            className="text-[10px] bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-lg hover:bg-blue-600/20 transition-colors font-medium flex items-center gap-1.5"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            AO VIVO
+          </button>
+        )}
       </div>
 
       <div className="p-4 md:p-7 space-y-4 overflow-y-auto">
@@ -210,7 +220,7 @@ export default function AuditoriasPage() {
                         <tr
                           key={a.id}
                           className="hover:bg-blue-600/5 group cursor-pointer transition-all duration-200"
-                          onClick={() => setSelected(a)}
+                          onClick={() => setSelectedId(a.id)}
                         >
                           <td className="px-6 py-4">
                             <div className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">
@@ -314,7 +324,7 @@ export default function AuditoriasPage() {
         </div>
       </div>
 
-      <AuditDetailSheet auditoria={selected} onClose={() => setSelected(null)} />
+      <AuditDetailSheet auditoria={selected} onClose={() => setSelectedId(null)} />
     </div>
   )
 }
