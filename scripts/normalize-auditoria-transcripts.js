@@ -22,6 +22,18 @@ function normalizeSpeakerLabel(value) {
     .toLowerCase()
 }
 
+function resolveSpeaker(normalizedLabel, normalizedVendedor, normalizedCliente) {
+  if (normalizedLabel === 'vendedor' || normalizedLabel === normalizedVendedor) {
+    return 'Vendedor'
+  }
+
+  if (normalizedLabel === 'cliente' || normalizedLabel === normalizedCliente) {
+    return 'Cliente'
+  }
+
+  return null
+}
+
 function rewriteTranscript(transcript, vendedorName, clienteName) {
   const normalizedVendedor = normalizeSpeakerLabel(vendedorName)
   const normalizedCliente = normalizeSpeakerLabel(clienteName)
@@ -46,21 +58,21 @@ function rewriteTranscript(transcript, vendedorName, clienteName) {
     const [, rawLabel, rawMessage] = labelMatch
     const normalizedLabel = normalizeSpeakerLabel(rawLabel)
     const msg = rawMessage.trim()
+    const resolvedSpeaker = resolveSpeaker(normalizedLabel, normalizedVendedor, normalizedCliente)
 
-    if (normalizedLabel === 'vendedor' || normalizedLabel === normalizedVendedor) {
-      current = { speaker: 'Vendedor', msg }
+    if (resolvedSpeaker) {
+      current = { speaker: resolvedSpeaker, msg }
       blocks.push(current)
       continue
     }
 
-    if (normalizedLabel === 'cliente' || normalizedLabel === normalizedCliente) {
-      current = { speaker: 'Cliente', msg }
+    const fullLine = `${rawLabel.trim()}: ${msg}`.trim()
+    if (current) {
+      current.msg = `${current.msg}\n${fullLine}`
+    } else {
+      current = { speaker: 'Cliente', msg: fullLine }
       blocks.push(current)
-      continue
     }
-
-    current = { speaker: 'Cliente', msg }
-    blocks.push(current)
   }
 
   return blocks.map((block) => `${block.speaker}: ${block.msg}`).join('\n')

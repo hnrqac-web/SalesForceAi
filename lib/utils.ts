@@ -64,6 +64,18 @@ function normalizeSpeakerLabel(value: string): string {
     .toLowerCase()
 }
 
+function resolveSpeaker(normalizedLabel: string, normalizedVendedor: string | null, normalizedCliente: string | null) {
+  if (normalizedLabel === 'vendedor' || (normalizedVendedor && normalizedLabel === normalizedVendedor)) {
+    return 'v' as const
+  }
+
+  if (normalizedLabel === 'cliente' || (normalizedCliente && normalizedLabel === normalizedCliente)) {
+    return 'c' as const
+  }
+
+  return null
+}
+
 export function extractTranscriptLines(
   transcript: string,
   vendedorName?: string,
@@ -92,24 +104,20 @@ export function extractTranscriptLines(
     const [, rawLabel, rawMessage] = labelMatch
     const normalizedLabel = normalizeSpeakerLabel(rawLabel)
     const msg = rawMessage.trim()
+    const resolvedSpeaker = resolveSpeaker(normalizedLabel, normalizedVendedor, normalizedCliente)
 
-    if (
-      normalizedLabel === 'vendedor' ||
-      (normalizedVendedor && normalizedLabel === normalizedVendedor)
-    ) {
-      parsed.push({ from: 'v' as const, msg })
+    if (resolvedSpeaker) {
+      parsed.push({ from: resolvedSpeaker, msg })
       continue
     }
 
-    if (
-      normalizedLabel === 'cliente' ||
-      (normalizedCliente && normalizedLabel === normalizedCliente)
-    ) {
-      parsed.push({ from: 'c' as const, msg })
-      continue
+    const previous = parsed[parsed.length - 1]
+    const fullLine = `${rawLabel.trim()}: ${msg}`.trim()
+    if (previous) {
+      previous.msg = `${previous.msg}\n${fullLine}`
+    } else {
+      parsed.push({ from: 'c' as const, msg: fullLine })
     }
-
-    parsed.push({ from: 'c' as const, msg })
   }
 
   return parsed
