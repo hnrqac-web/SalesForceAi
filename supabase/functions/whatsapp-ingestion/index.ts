@@ -25,11 +25,6 @@ function extractSellerName(body: any, fromMe: boolean) {
     nestedInstance?.pushName,
     body?.sender?.profileName,
     fromMe ? body?.data?.pushName : null,
-    instance?.name,
-    instance?.instanceName,
-    nestedInstance?.name,
-    nestedInstance?.instanceName,
-    typeof body?.instance === 'string' ? body.instance : null,
   ) || 'Vendedor não identificado'
 }
 
