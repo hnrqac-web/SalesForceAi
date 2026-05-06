@@ -69,6 +69,7 @@ export function Sidebar() {
     .toUpperCase()
     .slice(0, 2)
 
+  const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/auditorias', label: 'Auditorias', icon: FileSearch, badge: criticalCount },
     { href: '/relatorios', label: 'Relatórios', icon: BarChart2 },

@@ -7,7 +7,7 @@ import {
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { TrendingUp, ClipboardList, AlertTriangle, DollarSign, Loader2, Target, AlertCircle } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 
 type Period = '1d' | '7d' | '30d' | 'all'
 
