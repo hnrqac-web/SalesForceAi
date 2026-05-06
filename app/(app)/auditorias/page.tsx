@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuditorias } from '@/hooks/useAuditorias'
 import { AuditDetailSheet } from '@/components/AuditDetailSheet'
 import { Auditoria } from '@/types/auditoria'
 import { getStatus, getStatusColor, getSentimentColor, getScoreColor, formatDate, getInitials } from '@/lib/utils'
 import { Search, Calendar, User, Loader2, ChevronLeft, ChevronRight, Filter, X, ChevronUp, ChevronDown, Lock } from 'lucide-react'
+import { evolutionService } from '@/lib/evolution'
 
 type SortKey = 'created_at' | 'ai_score' | 'vendedor_name' | 'cliente_name' | 'lead_sentiment'
 type SortDir = 'asc' | 'desc'
@@ -24,6 +25,27 @@ export default function AuditoriasPage() {
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [instancesMap, setInstancesMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    async function loadInstances() {
+      try {
+        const instances = await evolutionService.getInstances()
+        const map: Record<string, string> = {}
+        instances.forEach((inst: any) => {
+          if (inst.name && inst.profileName) {
+            map[inst.name] = inst.profileName
+          }
+        })
+        setInstancesMap(map)
+      } catch (err) {
+        console.error('Failed to load instances map', err)
+      }
+    }
+    loadInstances()
+  }, [])
+
+  const getMappedVendedorName = (name: string) => name ? (instancesMap[name] || name) : '—'
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -31,11 +53,12 @@ export default function AuditoriasPage() {
     setPage(1)
   }
 
-  const vendedores = useMemo(() => [...new Set(data.map((a) => a.vendedor_name))].filter(Boolean), [data])
+  const vendedores = useMemo(() => [...new Set(data.map((a) => getMappedVendedorName(a.vendedor_name)))].filter(Boolean), [data, instancesMap])
 
   const filtered = useMemo(() => {
     const f = data.filter((a) => {
-      if (filterVendedor && a.vendedor_name !== filterVendedor) return false
+      const mappedVendedorName = getMappedVendedorName(a.vendedor_name)
+      if (filterVendedor && mappedVendedorName !== filterVendedor) return false
       if (filterData && !a.created_at.startsWith(filterData)) return false
       if (filterCliente && !(a.cliente_name || '').toLowerCase().includes(filterCliente.toLowerCase())) return false
       if (filterScore === 'alta' && a.ai_score < 8) return false
@@ -49,12 +72,18 @@ export default function AuditoriasPage() {
       return true
     })
     return [...f].sort((a, b) => {
-      const av = a[sortKey] ?? ''
-      const bv = b[sortKey] ?? ''
+      let av = a[sortKey] ?? ''
+      let bv = b[sortKey] ?? ''
+      
+      if (sortKey === 'vendedor_name') {
+        av = getMappedVendedorName(a.vendedor_name)
+        bv = getMappedVendedorName(b.vendedor_name)
+      }
+
       const cmp = typeof av === 'number' ? av - (bv as number) : String(av).localeCompare(String(bv))
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [data, filterVendedor, filterData, filterCliente, filterScore, filterStatus, sortKey, sortDir])
+  }, [data, filterVendedor, filterData, filterCliente, filterScore, filterStatus, sortKey, sortDir, instancesMap])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -255,9 +284,9 @@ export default function AuditoriasPage() {
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2.5">
                               <div className="w-6 h-6 rounded-lg bg-blue-600/20 border border-blue-500/20 flex items-center justify-center text-[9px] font-bold text-blue-400">
-                                {getInitials(a.vendedor_name || '?')}
+                                {getInitials(getMappedVendedorName(a.vendedor_name))}
                               </div>
-                              <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">{a.vendedor_name || '—'}</span>
+                              <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">{getMappedVendedorName(a.vendedor_name)}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-[11px] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">
