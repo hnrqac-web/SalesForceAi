@@ -166,5 +166,44 @@ export const evolutionService = {
       console.error('Erro ao buscar histórico:', error);
       throw error;
     }
+  },
+
+  /**
+   * Busca a lista de chats da instância
+   */
+  async fetchChats(instanceName: string) {
+    try {
+      const response = await fetch(`/api/evolution?endpoint=/chat/fetchChats/${instanceName}`, {
+        method: 'GET',
+      });
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar chats:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Tenta encontrar o JID de um contato pelo nome
+   */
+  async findJidByName(instanceName: string, name: string): Promise<string | null> {
+    try {
+      const chats = await this.fetchChats(instanceName);
+      if (!Array.isArray(chats)) return null;
+
+      // Procura por um chat que tenha o nome parecido
+      const targetChat = chats.find((c: any) => 
+        c.name?.toLowerCase().includes(name.toLowerCase()) ||
+        c.pushName?.toLowerCase().includes(name.toLowerCase()) ||
+        name.toLowerCase().includes(c.name?.toLowerCase())
+      );
+
+      return targetChat?.id || targetChat?.remoteJid || null;
+    } catch (error) {
+      console.error('Erro ao encontrar JID por nome:', error);
+      return null;
+    }
   }
 };

@@ -79,30 +79,46 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
   const handleSyncHistory = async () => {
     let jid = auditoria.cliente_jid
     
-    // Fallback: se não tem JID, tenta ver se o nome do cliente é um número
-    if (!jid && auditoria.cliente_name && /^\d+$/.test(auditoria.cliente_name.replace(/\D/g, ''))) {
-      jid = auditoria.cliente_name.replace(/\D/g, '')
-    }
-
-    // Se ainda não tem JID, pede para o usuário digitar o número
-    if (!jid) {
-      const input = window.prompt('JID (Número) do cliente não encontrado. Por favor, digite o número do WhatsApp com DDD (ex: 5511999999999):')
-      if (!input) return
-      jid = input.replace(/\D/g, '')
-    }
-
-    if (!jid) return
-
     setIsSyncing(true)
     try {
+      // 1. Tenta Descoberta Automática se o JID estiver faltando
+      if (!jid) {
+        toast.info('Tentando localizar o número do cliente automaticamente...')
+        const discoveredJid = await evolutionService.findJidByName(auditoria.vendedor_name, auditoria.cliente_name)
+        if (discoveredJid) {
+          jid = discoveredJid
+          toast.success('Número localizado!')
+        }
+      }
+
+      // Fallback: se não tem JID e não descobriu, tenta ver se o nome do cliente é um número
+      if (!jid && auditoria.cliente_name && /^\d+$/.test(auditoria.cliente_name.replace(/\D/g, ''))) {
+        jid = auditoria.cliente_name.replace(/\D/g, '')
+      }
+
+      // Se ainda não tem JID, pede para o usuário digitar o número
+      if (!jid) {
+        const input = window.prompt('Não conseguimos localizar o número do cliente automaticamente. Por favor, digite o número do WhatsApp com DDD:')
+        if (!input) {
+          setIsSyncing(false)
+          return
+        }
+        jid = input.replace(/\D/g, '')
+      }
+
+      if (!jid) {
+        setIsSyncing(false)
+        return
+      }
+
       // Garante que o JID tenha o formato correto para a API
       const cleanJid = jid.includes('@') ? jid : `${jid.split('@')[0]}@s.whatsapp.net`
 
-      // 1. Busca histórico da Evolution API
+      // 2. Busca histórico da Evolution API
       const response = await evolutionService.fetchMessages(
         auditoria.vendedor_name, 
         cleanJid,
-        50 // Puxa as últimas 50 mensagens para garantir
+        50
       )
 
       const messages = response?.messages || []
