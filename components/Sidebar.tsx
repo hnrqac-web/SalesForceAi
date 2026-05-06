@@ -83,16 +83,19 @@ export function Sidebar() {
         {/* Logo */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/25">
               <Activity size={16} color="white" />
             </div>
             <div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-900 dark:text-slate-50 leading-tight tracking-tight">SalesForce AI</div>
+              <div className="text-sm font-bold text-slate-800 dark:text-slate-50 leading-tight tracking-tight">SalesForce AI</div>
               <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">Auditor</div>
             </div>
           </div>
           {onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors">
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            >
               <X size={16} />
             </button>
           )}
@@ -121,8 +124,8 @@ export function Sidebar() {
                 href={href}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                   active
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
-                    : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800/50 hover:text-slate-800 dark:text-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
                 <Icon size={15} strokeWidth={active ? 2.5 : 2} />
@@ -143,17 +146,17 @@ export function Sidebar() {
         <div className="px-2 pb-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700/50 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:border-slate-600 transition-all group"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-all group"
           >
             <Search size={13} />
             <span className="flex-1 text-xs text-left">Buscar...</span>
-            <kbd className="hidden lg:flex items-center gap-0.5 text-[9px] font-mono bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5">⌘K</kbd>
+            <kbd className="hidden lg:flex items-center gap-0.5 text-[9px] font-mono bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600 rounded px-1 py-0.5">⌘K</kbd>
           </button>
         </div>
 
         {/* User */}
         <div className="p-2 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-50/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/50">
+          <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-inner">
               {userInitials}
             </div>
@@ -169,7 +172,7 @@ export function Sidebar() {
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
-                className="p-1.5 rounded-md hover:bg-slate-100 dark:bg-slate-800/50 hover:text-slate-800 dark:text-slate-200 text-slate-400 dark:text-slate-500 transition-colors mr-1"
+                className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors mr-1"
               >
                 {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
               </button>
@@ -177,7 +180,7 @@ export function Sidebar() {
             <button
               onClick={handleLogout}
               title="Sair"
-              className="p-1.5 rounded-md hover:bg-red-500/10 hover:text-red-400 text-slate-400 dark:text-slate-500 transition-colors"
+              className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
             >
               <LogOut size={14} />
             </button>
@@ -190,9 +193,9 @@ export function Sidebar() {
   return (
     <>
       {/* ── Mobile top bar ── */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-40 h-14 bg-white dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4">
+      <header className="md:hidden fixed top-0 inset-x-0 z-40 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-blue-700 rounded-md flex items-center justify-center shadow-lg shadow-blue-600/25">
             <Activity size={13} color="white" />
           </div>
           <span className="text-sm font-bold text-slate-900 dark:text-slate-50 tracking-tight">SalesForce AI</span>
@@ -205,13 +208,13 @@ export function Sidebar() {
           )}
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
           >
             <Search size={17} />
           </button>
           <button
             onClick={() => setIsOpen(true)}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
           >
             <Menu size={18} />
           </button>

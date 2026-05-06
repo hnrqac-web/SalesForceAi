@@ -73,7 +73,6 @@ export default function DashboardPage() {
     const sellers = [...new Set(data.map(a => getSellerDisplayName(a.vendedor_name)))].filter(Boolean)
 
     if (period === '1d') {
-      // Gráfico por hora
       const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}h`)
       return hours.map((hour, index) => {
         const dayData: any = { day: hour }
@@ -87,7 +86,7 @@ export default function DashboardPage() {
           }
         })
         return dayData
-      }).filter((d, i) => i >= 8 && i <= 20) // Horário comercial
+      }).filter((d, i) => i >= 8 && i <= 20)
     }
 
     const days = period === '7d'
@@ -141,6 +140,7 @@ export default function DashboardPage() {
       sub: 'Qualidade geral analisada pela IA',
       icon: TrendingUp,
       color: 'text-blue-400',
+      accentBorder: 'border-t-blue-500/50',
       progress: avgScore * 10,
       progressColor: 'bg-blue-500',
     },
@@ -150,6 +150,7 @@ export default function DashboardPage() {
       sub: 'Análises processadas no período',
       icon: ClipboardList,
       color: 'text-cyan-400',
+      accentBorder: 'border-t-cyan-500/50',
     },
     {
       title: 'Leads em Risco Crítico',
@@ -157,6 +158,7 @@ export default function DashboardPage() {
       sub: 'Requer atenção imediata',
       icon: AlertTriangle,
       color: 'text-red-400',
+      accentBorder: 'border-t-red-500/50',
       badge: true,
     },
     {
@@ -165,6 +167,7 @@ export default function DashboardPage() {
       sub: ticketMedio === 0 ? 'Defina o Ticket Médio em Configurações' : 'Valor potencial de leads críticos',
       icon: DollarSign,
       color: 'text-amber-400',
+      accentBorder: 'border-t-amber-500/50',
     },
     {
       title: 'Probabilidade (Média)',
@@ -172,6 +175,7 @@ export default function DashboardPage() {
       sub: 'Chance média de fechamento',
       icon: Target,
       color: 'text-purple-400',
+      accentBorder: 'border-t-purple-500/50',
       progress: avgProbability * 10,
       progressColor: 'bg-purple-500',
     },
@@ -180,12 +184,19 @@ export default function DashboardPage() {
   const chartColors = ['#3b82f6', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b']
   const uniqueSellers = [...new Set(data.map(a => getSellerDisplayName(a.vendedor_name)))].filter(Boolean)
 
+  const tooltipStyle = {
+    background: 'var(--chart-tooltip-bg)',
+    border: '1px solid var(--chart-tooltip-border)',
+    borderRadius: 8,
+    fontSize: 12,
+  }
+
   return (
     <div>
       <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
-            <h1 className="text-lg md:text-xl font-semibold text-slate-900 dark:text-slate-50">Dashboard de Gestão</h1>
+            <h1 className="text-lg md:text-xl font-semibold text-slate-900 dark:text-slate-50" style={{ fontFamily: 'var(--font-heading)' }}>Dashboard de Gestão</h1>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Visão executiva das auditorias em tempo real</p>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -197,7 +208,7 @@ export default function DashboardPage() {
                 className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all ${
                   period === key
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
                 }`}
               >
                 {label}
@@ -215,7 +226,7 @@ export default function DashboardPage() {
             ))
           ) : (
             cards.map((card) => (
-              <div key={card.title} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+              <div key={card.title} className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-t-2 ${card.accentBorder} rounded-xl p-4`}>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 font-medium">
                   <card.icon size={12} className={card.color} />
                   {card.title}
@@ -244,7 +255,7 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <div className="text-sm font-semibold text-slate-100">Performance por Vendedor</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Performance por Vendedor</div>
               <div className="text-[11px] text-slate-400 dark:text-slate-500">Score médio de qualidade — {PERIOD_LABELS[period]}</div>
             </div>
           </div>
@@ -256,21 +267,17 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
                   <XAxis
                     dataKey="day"
-                    tick={{ fill: '#64748b', fontSize: period === '30d' ? 9 : 11 }}
+                    tick={{ fill: 'var(--chart-axis)', fontSize: period === '30d' ? 9 : 11 }}
                     axisLine={false}
                     tickLine={false}
                     interval={period === '30d' ? 4 : 0}
                   />
-                  <YAxis domain={[0, 10]} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 12 }}
-                    itemStyle={{ fontSize: 11 }}
-                    labelStyle={{ color: '#94a3b8', marginBottom: 4 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8', paddingTop: 10 }} />
+                  <YAxis domain={[0, 10]} tick={{ fill: 'var(--chart-axis)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} itemStyle={{ fontSize: 11 }} labelStyle={{ color: 'var(--chart-axis)', marginBottom: 4 }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: 'var(--chart-axis)', paddingTop: 10 }} />
                   {uniqueSellers.map((name, i) => (
                     <Line
                       key={name}
@@ -295,14 +302,14 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-2">
               {[
                 { label: 'Positivo', count: data.filter(a => a.lead_sentiment === 'Positivo' || a.lead_sentiment === 'Interessado').length, color: 'text-emerald-400', bg: 'bg-emerald-500/5 border-emerald-500/10' },
-                { label: 'Neutro', count: data.filter(a => a.lead_sentiment === 'Neutro' || a.lead_sentiment === 'Indeciso').length, color: 'text-slate-400 dark:text-slate-500 dark:text-slate-400', bg: 'bg-slate-500/5 border-slate-500/10' },
+                { label: 'Neutro', count: data.filter(a => a.lead_sentiment === 'Neutro' || a.lead_sentiment === 'Indeciso').length, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-500/5 border-slate-500/10' },
                 { label: 'Negativo', count: data.filter(a => a.lead_sentiment === 'Negativo').length, color: 'text-amber-400', bg: 'bg-amber-500/5 border-amber-500/10' },
                 { label: 'Crítico', count: data.filter(a => a.lead_sentiment === 'Crítico').length, color: 'text-red-400', bg: 'bg-red-500/5 border-red-500/10' },
               ].map(s => (
                 <div key={s.label} className={`rounded-lg p-3 border ${s.bg}`}>
                   <div className="text-[10px] text-slate-400 dark:text-slate-500">{s.label}</div>
                   <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
-                  <div className="mt-1.5 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="mt-1.5 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-1000 ${
                         s.label === 'Positivo' ? 'bg-emerald-500' :
@@ -322,7 +329,7 @@ export default function DashboardPage() {
             <div className="space-y-1">
               {topSellers.length > 0 ? (
                 topSellers.map((v, i) => (
-                  <div key={v.name} className={`flex items-center justify-between py-2.5 ${i < topSellers.length - 1 ? 'border-b border-slate-200 dark:border-slate-800/50' : ''}`}>
+                  <div key={v.name} className={`flex items-center justify-between py-2.5 ${i < topSellers.length - 1 ? 'border-b border-slate-100 dark:border-slate-800/50' : ''}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[8px] font-black text-white ${
                         i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-slate-400' : 'bg-amber-700'
@@ -334,10 +341,10 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{v.name}</span>
-                        <div className="text-[9px] text-slate-600">{v.total} auditorias</div>
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500">{v.total} auditorias</div>
                       </div>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded border ${getScoreColor(v.score)} bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700`}>
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded border ${getScoreColor(v.score)} bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700`}>
                       {v.score}
                     </span>
                   </div>
@@ -356,7 +363,7 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {topObjections.length > 0 ? (
                 topObjections.map(([obj, count], i) => (
-                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                     <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold bg-amber-500/10 text-amber-400 shrink-0">
                       {count}
                     </div>

@@ -1,19 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --sidebar-width: 220px;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+
+  /* Chart / tooltip theme tokens — light mode */
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #e2e8f0;
+  --chart-grid: #e2e8f0;
+  --chart-axis: #94a3b8;
+  --chart-cursor: rgba(148, 163, 184, 0.12);
+  --ring-track: #e2e8f0;
+}
+
+.dark {
+  /* Chart / tooltip theme tokens — dark mode */
+  --chart-tooltip-bg: #0f172a;
+  --chart-tooltip-border: #334155;
+  --chart-grid: #1e293b;
+  --chart-axis: #64748b;
+  --chart-cursor: #1e293b;
+  --ring-track: #1e293b;
 }
 
 * {
   box-sizing: border-box;
 }
 
-body {
-  /* Cores geridas pelo Tailwind (bg-slate-50 dark:bg-slate-950) no layout.tsx */
-}
-
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -22,6 +40,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 3px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
 }

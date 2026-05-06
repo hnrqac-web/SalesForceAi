@@ -3,6 +3,7 @@
 import { Sidebar } from '@/components/Sidebar'
 import { Toaster } from 'sonner'
 import { useAuditNotifications } from '@/hooks/useAuditNotifications'
+import { useTheme } from 'next-themes'
 
 function NotificationProvider() {
   useAuditNotifications()
@@ -10,6 +11,8 @@ function NotificationProvider() {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { resolvedTheme } = useTheme()
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
       <Sidebar />
@@ -17,12 +20,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <NotificationProvider />
       <Toaster
         position="bottom-right"
-        theme="dark"
+        theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
         toastOptions={{
           style: {
-            background: '#0f172a',
-            border: '1px solid #1e293b',
-            color: '#e2e8f0',
             fontSize: '12px',
             borderRadius: '12px',
           },

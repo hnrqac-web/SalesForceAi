@@ -13,6 +13,13 @@ import {
 } from 'recharts'
 import { ArrowLeft, TrendingUp, MessageSquare, AlertTriangle, Award, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react'
 
+const tooltipStyle = {
+  background: 'var(--chart-tooltip-bg)',
+  border: '1px solid var(--chart-tooltip-border)',
+  borderRadius: 8,
+  fontSize: 11,
+}
+
 export default function VendedorPage() {
   const { vendedor } = useParams<{ vendedor: string }>()
   const router = useRouter()
@@ -92,7 +99,7 @@ export default function VendedorPage() {
   if (total === 0 && !isLoading) {
     return (
       <div className="p-7">
-        <button onClick={() => router.push('/relatorios')} className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 mb-6 transition-colors">
+        <button onClick={() => router.push('/relatorios')} className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 mb-6 transition-colors">
           <ArrowLeft size={14} /> Voltar para Relatórios
         </button>
         <div className="py-20 text-center">
@@ -105,10 +112,10 @@ export default function VendedorPage() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Header */}
-      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-slate-50 dark:bg-slate-950/80 backdrop-blur z-10">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white/90 dark:bg-slate-950/80 backdrop-blur z-10">
         <button
           onClick={() => router.push('/relatorios')}
-          className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors mb-4"
+          className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors mb-4"
         >
           <ArrowLeft size={13} /> Voltar para Relatórios
         </button>
@@ -157,11 +164,11 @@ export default function VendedorPage() {
               {chartData.length > 1 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="idx" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 10]} tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+                    <XAxis dataKey="idx" tick={{ fill: 'var(--chart-axis)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 10]} tick={{ fill: 'var(--chart-axis)', fontSize: 10 }} axisLine={false} tickLine={false} />
                     <Tooltip
-                      contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 11 }}
+                      contentStyle={tooltipStyle}
                       formatter={(val: any, _: any, props: any) => [
                         `${val}/10`, props.payload.cliente || 'Cliente'
                       ]}
@@ -179,7 +186,7 @@ export default function VendedorPage() {
                     <Line
                       type="monotone"
                       dataKey={() => 7}
-                      stroke="#64748b"
+                      stroke="var(--chart-axis)"
                       strokeWidth={1}
                       strokeDasharray="4 4"
                       dot={false}
@@ -192,7 +199,7 @@ export default function VendedorPage() {
                 </div>
               )}
             </div>
-            <div className="text-[9px] text-slate-600 mt-1">— linha tracejada = meta 7.0</div>
+            <div className="text-[9px] text-slate-400 dark:text-slate-600 mt-1">— linha tracejada = meta 7.0</div>
           </div>
 
           {/* Sentimentos + Coaching */}
@@ -203,7 +210,7 @@ export default function VendedorPage() {
               <div className="space-y-2">
                 {sentimentos.map(([sent, count]) => (
                   <div key={sent} className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400 w-16 shrink-0">{sent}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 w-16 shrink-0">{sent}</span>
                     <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
@@ -215,7 +222,7 @@ export default function VendedorPage() {
                         style={{ width: `${(count / total) * 100}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-400 w-6 text-right">{count}</span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 w-6 text-right">{count}</span>
                   </div>
                 ))}
               </div>
@@ -231,11 +238,11 @@ export default function VendedorPage() {
                   { label: 'Crítico (<6)', count: auditorias.filter(a => a.ai_score < 6).length, color: 'bg-red-500' },
                 ].map(item => (
                   <div key={item.label} className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400 w-20 shrink-0">{item.label}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 w-20 shrink-0">{item.label}</span>
                     <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${item.color}`} style={{ width: total > 0 ? `${(item.count / total) * 100}%` : '0%' }} />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-400 w-4 text-right">{item.count}</span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 w-4 text-right">{item.count}</span>
                   </div>
                 ))}
               </div>
@@ -244,22 +251,22 @@ export default function VendedorPage() {
         </div>
 
         {/* Coaching */}
-        <div className="bg-gradient-to-br from-blue-950/50 to-slate-900 border border-blue-500/20 rounded-xl p-5">
-          <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 mb-3 uppercase tracking-wider">
+        <div className="bg-gradient-to-br from-blue-50 to-slate-100 dark:from-blue-950/50 dark:to-slate-900 border border-blue-200 dark:border-blue-500/20 rounded-xl p-5">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-cyan-400 mb-3 uppercase tracking-wider">
             <Award size={13} />
             Plano de Coaching Personalizado
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {coachingTips.map((tip, i) => (
               <div key={i} className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex gap-2">
-                <div className="w-5 h-5 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-[9px] font-black text-blue-400 shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-[9px] font-black text-blue-500 dark:text-blue-400 shrink-0 mt-0.5">
                   {i + 1}
                 </div>
                 <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">{tip}</p>
               </div>
             ))}
           </div>
-          <div className="mt-3 text-[10px] text-slate-600">
+          <div className="mt-3 text-[10px] text-slate-500 dark:text-slate-600">
             Baseado no score médio de {avgScore}/10 nas últimas {total} auditorias
           </div>
         </div>
@@ -269,7 +276,7 @@ export default function VendedorPage() {
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
             <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">Histórico de Conversas</div>
           </div>
-          <div className="divide-y divide-slate-800/50">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
             {auditorias.map(a => {
               const statusCls = getStatusColor(a.ai_score)
               const sentCls = getSentimentColor(a.lead_sentiment)
@@ -277,7 +284,7 @@ export default function VendedorPage() {
                 <div
                   key={a.id}
                   onClick={() => setSelected(a)}
-                  className="flex items-center gap-4 px-4 py-3.5 hover:bg-slate-100 dark:bg-slate-800/30 cursor-pointer transition-colors group"
+                  className="flex items-center gap-4 px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-400 transition-colors truncate">
@@ -285,7 +292,7 @@ export default function VendedorPage() {
                     </div>
                     <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">{a.ai_summary || '—'}</div>
                   </div>
-                  <div className="text-[10px] text-slate-600 shrink-0 w-20 text-right">{formatDate(a.created_at)}</div>
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 w-20 text-right">{formatDate(a.created_at)}</div>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${statusCls}`}>
                     {getStatus(a.ai_score).toUpperCase()}
                   </span>

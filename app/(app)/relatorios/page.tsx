@@ -49,6 +49,13 @@ const SENTIMENT_COLORS: Record<string, string> = {
   Crítico: '#ef4444',
 }
 
+const tooltipStyle = {
+  background: 'var(--chart-tooltip-bg)',
+  border: '1px solid var(--chart-tooltip-border)',
+  borderRadius: 8,
+  fontSize: 11,
+}
+
 export default function RelatoriosPage() {
   const { data: allData, isLoading } = useAuditorias()
   const { getSellerDisplayName } = useSellerNames()
@@ -122,7 +129,7 @@ export default function RelatoriosPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sticky top-0 bg-slate-50 dark:bg-slate-950/80 backdrop-blur z-10">
+      <div className="px-4 md:px-7 pt-4 md:pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sticky top-0 bg-white/90 dark:bg-slate-950/80 backdrop-blur z-10">
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Relatórios</h1>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Analytics avançado e exportação de auditorias</p>
@@ -156,7 +163,7 @@ export default function RelatoriosPage() {
                   key={key}
                   onClick={() => { setPeriod(key); setPage(1) }}
                   className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all ${
-                    period === key ? 'bg-blue-600 text-white' : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
+                    period === key ? 'bg-blue-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   {label}
@@ -167,7 +174,7 @@ export default function RelatoriosPage() {
             <select
               value={vendedor}
               onChange={e => { setVendedor(e.target.value); setPage(1) }}
-              className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 px-3 py-2 text-xs outline-none focus:border-blue-500 transition-all"
+              className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 px-3 py-2 text-xs outline-none focus:border-blue-500 transition-all"
             >
               <option value="">Todos os vendedores</option>
               {allVendedores.map(v => <option key={v} value={v}>{getSellerDisplayName(v)}</option>)}
@@ -176,13 +183,13 @@ export default function RelatoriosPage() {
             <select
               value={sentimento}
               onChange={e => { setSentimento(e.target.value); setPage(1) }}
-              className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 px-3 py-2 text-xs outline-none focus:border-blue-500 transition-all"
+              className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 px-3 py-2 text-xs outline-none focus:border-blue-500 transition-all"
             >
               <option value="">Todos os sentimentos</option>
               {allSentimentos.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
 
-            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2">
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
               <span className="text-[10px] text-slate-400 dark:text-slate-500">Score mín:</span>
               <input
                 type="range" min={0} max={10} step={0.5}
@@ -233,12 +240,12 @@ export default function RelatoriosPage() {
               {vendedorStats.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={vendedorStats} barSize={28}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 10]} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: 'var(--chart-axis)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 10]} tick={{ fill: 'var(--chart-axis)', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip
-                      cursor={{ fill: '#1e293b' }}
-                      contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 11 }}
+                      cursor={{ fill: 'var(--chart-cursor)' }}
+                      contentStyle={tooltipStyle}
                       formatter={(val: any, _: any, props: any) => [`${val}/10 (${props.payload.total} aud.)`, props.payload.fullName]}
                     />
                     <Bar dataKey="score" radius={[4, 4, 0, 0]}>
@@ -281,11 +288,9 @@ export default function RelatoriosPage() {
                       ))}
                     </Pie>
                     <Legend
-                      formatter={(val) => <span style={{ fontSize: 10, color: '#94a3b8' }}>{val}</span>}
+                      formatter={(val) => <span style={{ fontSize: 10, color: 'var(--chart-axis)' }}>{val}</span>}
                     />
-                    <Tooltip
-                      contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 11 }}
-                    />
+                    <Tooltip contentStyle={tooltipStyle} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -308,10 +313,10 @@ export default function RelatoriosPage() {
               <Link
                 key={v.fullName}
                 href={`/relatorios/${encodeURIComponent(v.fullName)}`}
-                className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-3 flex items-center gap-3 hover:border-blue-500/30 hover:bg-slate-100 dark:bg-slate-800 transition-all group"
+                className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 flex items-center gap-3 hover:border-blue-500/30 hover:bg-blue-500/5 dark:hover:bg-slate-800 transition-all group"
               >
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0 ${
-                  i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-slate-400' : i === 2 ? 'bg-amber-700' : 'bg-slate-700'
+                  i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-slate-400' : i === 2 ? 'bg-amber-700' : 'bg-slate-500 dark:bg-slate-700'
                 }`}>
                   {i + 1}
                 </div>
@@ -324,7 +329,7 @@ export default function RelatoriosPage() {
                     <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="text-[10px] text-slate-400 dark:text-slate-500">{v.total} auditorias · {v.positivos} positivos</div>
-                  <div className="mt-1.5 h-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="mt-1.5 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${
                         v.score >= 8 ? 'bg-blue-500' : v.score >= 6 ? 'bg-amber-500' : 'bg-red-500'
@@ -359,15 +364,15 @@ export default function RelatoriosPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800">
+                <tr className="bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800">
                   {['Data', 'Vendedor', 'Cliente', 'Score', 'Sentimento', 'Resumo IA'].map(h => (
                     <th key={h} className="px-4 py-3 text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                 {paginated.length > 0 ? paginated.map(a => (
-                  <tr key={a.id} className="hover:bg-slate-100 dark:bg-slate-800/30 transition-colors">
+                  <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="px-4 py-3 text-[11px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatDate(a.created_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -388,7 +393,7 @@ export default function RelatoriosPage() {
                         ['Positivo', 'Interessado'].includes(a.lead_sentiment)
                           ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                           : ['Neutro', 'Indeciso'].includes(a.lead_sentiment)
-                            ? 'text-slate-400 dark:text-slate-500 dark:text-slate-400 bg-slate-500/10 border-slate-500/30'
+                            ? 'text-slate-500 dark:text-slate-400 bg-slate-500/10 border-slate-500/30'
                             : a.lead_sentiment === 'Negativo'
                               ? 'text-amber-400 bg-amber-500/10 border-amber-500/30'
                               : 'text-red-400 bg-red-500/10 border-red-500/30'
@@ -417,7 +422,7 @@ export default function RelatoriosPage() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 disabled:opacity-30 transition-colors px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-300 dark:border-slate-700"
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-30 transition-colors px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
               >
                 <ChevronLeft size={13} /> Anterior
               </button>
@@ -429,7 +434,7 @@ export default function RelatoriosPage() {
                       key={p}
                       onClick={() => setPage(p)}
                       className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                        p === page ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+                        p === page ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
                       }`}
                     >
                       {p}
@@ -440,7 +445,7 @@ export default function RelatoriosPage() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 disabled:opacity-30 transition-colors px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-300 dark:border-slate-700"
+                className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-30 transition-colors px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
               >
                 Próxima <ChevronRight size={13} />
               </button>

@@ -15,12 +15,46 @@ function normalizeJid(value: string | null | undefined) {
   return digits ? `${digits}@s.whatsapp.net` : null
 }
 
+const AVATARS_CACHE_KEY = 'audit_avatars_cache'
+
+interface CachedAvatars {
+  seller: Record<string, string>
+  client: Record<string, string>
+  timestamp: number
+}
+
+function getCachedAvatars(): CachedAvatars | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(AVATARS_CACHE_KEY)
+    if (!cached) return null
+    const parsed = JSON.parse(cached) as CachedAvatars
+    if (Date.now() - parsed.timestamp > 1000 * 60 * 30) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function saveCachedAvatars(seller: Record<string, string>, client: Record<string, string>) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(AVATARS_CACHE_KEY, JSON.stringify({ seller, client, timestamp: Date.now() }))
+  } catch {}
+}
+
 export function useAuditAvatars(auditorias: Auditoria[]) {
   const [sellerAvatars, setSellerAvatars] = useState<Record<string, string>>({})
   const [clientAvatars, setClientAvatars] = useState<Record<string, string>>({})
 
   useEffect(() => {
     let active = true
+
+    const cached = getCachedAvatars()
+    if (cached) {
+      setSellerAvatars(cached.seller)
+      setClientAvatars(cached.client)
+    }
 
     async function loadAvatars() {
       try {
@@ -76,8 +110,14 @@ export function useAuditAvatars(auditorias: Auditoria[]) {
           })
         }
 
-        setSellerAvatars(nextSellerAvatars)
-        setClientAvatars(nextClientAvatars)
+        const hasNewData = Object.keys(nextSellerAvatars).length > Object.keys(cached?.seller || {}).length ||
+                          Object.keys(nextClientAvatars).length > Object.keys(cached?.client || {}).length
+
+        if (hasNewData || !cached) {
+          setSellerAvatars(nextSellerAvatars)
+          setClientAvatars(nextClientAvatars)
+          saveCachedAvatars(nextSellerAvatars, nextClientAvatars)
+        }
       } catch (error) {
         console.error('Failed to load audit avatars', error)
       }

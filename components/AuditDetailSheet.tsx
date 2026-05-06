@@ -25,7 +25,12 @@ function ScoreRing({ score }: { score: number }) {
   return (
     <div className="relative inline-flex items-center justify-center">
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#1e293b" strokeWidth={strokeWidth} />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none"
+          style={{ stroke: 'var(--ring-track)' }}
+          strokeWidth={strokeWidth}
+        />
         <circle
           cx={size / 2} cy={size / 2} r={radius}
           fill="none"
@@ -83,17 +88,14 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
     
     setIsSyncing(true)
     try {
-      // 1. Localiza a Instância Correta (pode ser pelo nome ou pelo número do vendedor)
       toast.info('Localizando instância do vendedor...')
       let instanceName = await evolutionService.findInstanceByName(auditoria.vendedor_name)
       
-      // Se não achou pelo nome/número salvo, tenta pegar a primeira instância conectada como fallback
       if (!instanceName) {
         const instances = await evolutionService.getInstances()
         const firstOpen = Array.isArray(instances) ? instances.find((i: any) => i.status === 'open' || i.connectionStatus === 'open') : null
         if (firstOpen) {
           instanceName = firstOpen.instanceName || firstOpen.name
-          console.log(`Usando fallback de instância: ${instanceName}`)
         }
       }
 
@@ -103,7 +105,6 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
       let jid = auditoria.cliente_jid
       
-      // 2. Tenta Descoberta Automática do Cliente se o JID estiver faltando
       if (!jid) {
         toast.info('Buscando número do cliente no WhatsApp...')
         const discoveredJid = await evolutionService.findJidByName(instanceName, auditoria.cliente_name)
@@ -113,12 +114,10 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
         }
       }
 
-      // Fallback: se não tem JID e não descobriu, tenta ver se o nome do cliente é um número
       if (!jid && auditoria.cliente_name && /^\d+$/.test(auditoria.cliente_name.replace(/\D/g, ''))) {
         jid = auditoria.cliente_name.replace(/\D/g, '')
       }
 
-      // Se ainda não tem JID, pede para o usuário digitar o número
       if (!jid) {
         const input = window.prompt('Não conseguimos localizar o chat "' + auditoria.cliente_name + '" automaticamente. Por favor, digite o número do WhatsApp com DDD:')
         if (!input) {
@@ -133,19 +132,10 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
         return
       }
 
-      // Garante que o JID tenha o formato correto para a API
       const cleanJid = jid.includes('@') ? jid : `${jid.split('@')[0]}@s.whatsapp.net`
 
-      // 3. Busca histórico da Evolution API
-      const response: any = await evolutionService.fetchMessages(
-        instanceName, 
-        cleanJid,
-        100 // Aumentado para 100 para pegar mais contexto
-      )
+      const response: any = await evolutionService.fetchMessages(instanceName, cleanJid, 100)
 
-      console.log('Response da Evolution API:', response)
-
-      // Garante que temos um array de mensagens, lidando com diferentes formatos da v1 e v2
       let messagesArray: any[] = []
       if (Array.isArray(response)) {
         messagesArray = response
@@ -161,22 +151,18 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
         messagesArray = response.response.data
       }
       
-      // Retry para números do Brasil (problema do 9º dígito)
       if (messagesArray.length === 0 && cleanJid.startsWith('55')) {
         const parts = cleanJid.split('@');
         const number = parts[0];
         let alternativeJid = null;
         
         if (number.length === 13 && number[4] === '9') {
-          // Tem o 9, tenta sem
           alternativeJid = number.substring(0, 4) + number.substring(5) + '@' + parts[1];
         } else if (number.length === 12) {
-          // Não tem o 9, tenta com (regiões que usam 9)
           alternativeJid = number.substring(0, 4) + '9' + number.substring(4) + '@' + parts[1];
         }
 
         if (alternativeJid) {
-          console.log('Tentando JID alternativo para Brasil:', alternativeJid);
           const altResponse = await evolutionService.fetchMessages(instanceName, alternativeJid, 100);
           
           if (Array.isArray(altResponse)) messagesArray = altResponse;
@@ -192,12 +178,10 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
         return
       }
 
-      // 3. Formata o novo transcript de forma segura
       const formattedTranscript = [...messagesArray]
         .reverse()
         .map((m: any) => {
           const fromMe = m.key?.fromMe
-          // Tenta extrair o texto de várias formas possíveis na v2
           const text = m.message?.conversation || 
                        m.message?.extendedTextMessage?.text || 
                        m.message?.imageMessage?.caption || 
@@ -210,7 +194,6 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
         })
         .join('\n')
 
-      // 4. Atualiza o banco de dados
       const { error } = await supabase
         .from('auditorias')
         .update({ 
@@ -269,7 +252,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       <div className="w-full sm:w-[540px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 h-full overflow-y-auto animate-in slide-in-from-right duration-200 flex flex-col">
 
         {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-5 py-4 flex items-start justify-between z-10">
+        <div className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-5 py-4 flex items-start justify-between z-10">
           <div>
             <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-50">
               <Zap size={14} className="text-cyan-400" />
@@ -281,7 +264,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
           </div>
           <div className="flex items-center gap-2">
             {auditoria.status === 'concluido' ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 rounded-lg text-[10px] font-bold border border-slate-300 dark:border-slate-700/50">
+              <span className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700/50">
                 <Lock size={12} />
                 CONCLUÍDO
               </span>
@@ -290,7 +273,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                 <button
                   onClick={handleSyncHistory}
                   disabled={isSyncing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 dark:text-cyan-400 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-50"
                   title="Sincronizar mensagens perdidas"
                 >
                   {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
@@ -306,7 +289,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                 </button>
               </div>
             )}
-            <button onClick={onClose} className="w-7 h-7 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 transition-colors">
+            <button onClick={onClose} className="w-7 h-7 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
               <X size={13} />
             </button>
           </div>
@@ -314,7 +297,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
         {/* Score Hero */}
         <div className="px-5 pt-5 pb-4">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl p-4 flex items-center gap-5">
+          <div className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex items-center gap-5">
             <ScoreRing score={auditoria.ai_score} />
             <div className="flex-1">
               <div className="flex gap-2 mb-2 flex-wrap">
@@ -350,7 +333,9 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                 key={key}
                 onClick={() => setTab(key)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  tab === key ? 'bg-slate-700 text-slate-100' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300'
+                  tab === key
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
               >
                 <Icon size={12} />
@@ -365,8 +350,8 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
             <div className="space-y-3 pt-2">
 
               {/* Resumo da IA */}
-              <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-4">
-                <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-cyan-500 dark:text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <Brain size={11} />
                   Resumo da IA
                 </div>
@@ -374,12 +359,12 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               </div>
 
               {/* Coaching — Próximo passo */}
-              <div className="bg-gradient-to-br from-blue-950/60 to-slate-900 border border-blue-500/30 rounded-xl p-4">
-                <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <div className="bg-gradient-to-br from-blue-50 to-slate-100 dark:from-blue-950/60 dark:to-slate-900 border border-blue-200 dark:border-blue-500/30 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-blue-600 dark:text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <ChevronRight size={11} />
                   Próximo Passo Recomendado
                 </div>
-                <p className="text-xs text-blue-100 leading-relaxed mb-3 italic">
+                <p className="text-xs text-slate-700 dark:text-blue-100 leading-relaxed mb-3 italic">
                   &ldquo;{auditoria.next_step_suggestion}&rdquo;
                 </p>
                 <button
@@ -394,14 +379,13 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               </div>
 
               {/* Score breakdown */}
-              <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-4">
-                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Breakdown do Score</div>
+              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Breakdown do Score</div>
                 <div className="space-y-2.5">
                   {(() => {
                     const s = auditoria.ai_score
                     const isPositive = ['Positivo', 'Interessado'].includes(auditoria.lead_sentiment)
                     const transcriptLen = (auditoria.transcript_completo || auditoria.transcript || '').length
-                    // Scores determinísticos baseados no score geral e dados reais
                     const breakdown = [
                       { label: 'Abertura da conversa', score: Math.min(10, Math.max(0, s + (transcriptLen > 500 ? 0.5 : -0.5))) },
                       { label: 'Identificação de necessidade', score: Math.min(10, Math.max(0, s + (isPositive ? 0.3 : -0.5))) },
@@ -410,8 +394,8 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                     ]
                     return breakdown.map(item => (
                       <div key={item.label} className="flex items-center gap-2">
-                        <div className="w-[130px] text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400 shrink-0">{item.label}</div>
-                        <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="w-[130px] text-[10px] text-slate-500 dark:text-slate-400 shrink-0">{item.label}</div>
+                        <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-700 ${
                               item.score >= 8 ? 'bg-blue-500' : item.score >= 6 ? 'bg-amber-500' : 'bg-red-500'
@@ -437,7 +421,9 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                   {lines.map((line, i) => (
                     <div key={i} className={`flex gap-2 ${line.from === 'v' ? 'flex-row-reverse' : ''}`}>
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5 ${
-                        line.from === 'v' ? 'bg-blue-800 text-blue-200' : 'bg-slate-700 text-slate-700 dark:text-slate-300'
+                        line.from === 'v'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                       }`}>
                         {line.from === 'v'
                           ? (vendedorDisplayName?.[0] || 'V')
@@ -450,8 +436,8 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                         </div>
                         <div className={`text-xs px-3 py-2 rounded-xl leading-relaxed ${
                           line.from === 'v'
-                            ? 'bg-blue-900/40 border border-blue-500/20 text-blue-100 rounded-tr-none'
-                            : 'bg-slate-700 border border-slate-600 text-slate-800 dark:text-slate-200 rounded-tl-none'
+                            ? 'bg-blue-600/20 dark:bg-blue-900/40 border border-blue-400/30 dark:border-blue-500/20 text-blue-900 dark:text-blue-100 rounded-tr-none'
+                            : 'bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-tl-none'
                         }`}>
                           {line.msg}
                         </div>
@@ -461,9 +447,9 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <MessageSquare size={28} className="text-slate-700 mx-auto mb-2" />
+                  <MessageSquare size={28} className="text-slate-300 dark:text-slate-700 mx-auto mb-2" />
                   <p className="text-xs text-slate-400 dark:text-slate-500">Transcrição não disponível</p>
-                  <div className="mt-3 bg-slate-100 dark:bg-slate-800 rounded-xl p-3 text-left">
+                  <div className="mt-3 bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-left">
                     <div className="text-[10px] text-slate-400 dark:text-slate-500 mb-1">Mensagem capturada:</div>
                     <p className="text-xs text-slate-700 dark:text-slate-300">{auditoria.transcript_completo || auditoria.transcript}</p>
                   </div>
@@ -482,9 +468,9 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                   { label: 'Confiança', score: auditoria.trust_score, icon: ThumbsUp },
                   { label: 'Probabilidade', score: auditoria.probability_to_close, icon: Activity },
                 ].map(kpi => (
-                  <div key={kpi.label} className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden">
+                  <div key={kpi.label} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden">
                     <kpi.icon size={14} className="text-slate-400 dark:text-slate-500 mb-1" />
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400 font-medium mb-1">{kpi.label}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-1">{kpi.label}</div>
                     <div className={`text-lg font-black ${getScoreColor(kpi.score || 0)}`}>
                       {typeof kpi.score === 'number' ? kpi.score.toFixed(1) : '—'}
                     </div>
@@ -493,7 +479,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
               </div>
 
               {/* Informações Qualitativas */}
-              <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/50 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4">
                 <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                   <div>
                     <div className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Estágio</div>
@@ -552,12 +538,12 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
 
               {/* Ação Recomendada & Mensagem Pronta */}
               {auditoria.copy_ready_message && (
-                <div className="bg-gradient-to-br from-blue-950/60 to-slate-900 border border-blue-500/30 rounded-xl p-4 mt-2">
-                  <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <div className="bg-gradient-to-br from-blue-50 to-slate-100 dark:from-blue-950/60 dark:to-slate-900 border border-blue-200 dark:border-blue-500/30 rounded-xl p-4 mt-2">
+                  <div className="text-[10px] font-bold text-blue-600 dark:text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <MessageSquare size={11} />
                     Mensagem Sugerida (Copy Ready)
                   </div>
-                  <div className="bg-slate-50 dark:bg-slate-50/50 dark:bg-slate-950/50 rounded-lg p-3 text-xs text-blue-200/80 mb-3 border border-blue-500/20 font-medium italic">
+                  <div className="bg-white/80 dark:bg-slate-950/50 rounded-lg p-3 text-xs text-slate-800 dark:text-blue-200/80 mb-3 border border-blue-200 dark:border-blue-500/20 font-medium italic">
                     "{auditoria.copy_ready_message}"
                   </div>
                   <button
@@ -567,7 +553,7 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
                       setTimeout(() => setCopiedMsg(false), 2000)
                     }}
                     className={`w-full py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      copiedMsg ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
+                      copiedMsg ? 'bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
                     }`}
                   >
                     {copiedMsg ? <Check size={14} /> : <Copy size={14} />}
@@ -586,16 +572,16 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center gap-3 text-red-400 mb-3">
               <AlertTriangle size={24} />
-              <h3 className="font-bold text-lg">Finalizar Atendimento?</h3>
+              <h3 className="font-bold text-lg text-slate-900 dark:text-slate-50">Finalizar Atendimento?</h3>
             </div>
-            <p className="text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400 mb-6">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
               Deseja realmente finalizar este atendimento? Novas mensagens do cliente criarão uma nova auditoria separada.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirmClose(false)}
                 disabled={isClosing}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
