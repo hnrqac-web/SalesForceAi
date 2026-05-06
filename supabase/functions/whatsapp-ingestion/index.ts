@@ -21,17 +21,20 @@ serve(async (req) => {
     const remoteJid = body.data?.key?.remoteJid || '';
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido';
     
-    // LOGICA "TANQUE DE GUERRA": Força Henrique Alves se for a sua instância
-    const instanciaRaw = body.instance || body.instanceName || '';
-    const instanciaStr = typeof instanciaRaw === 'object' ? (instanciaRaw.name || instanciaRaw.pushName || '') : String(instanciaRaw);
-    
-    let vendedorNome = 'Henrique Alves';
+    // Tenta extrair o nome sincronizado da conta em todas as profundidades possíveis da Evolution v2
+    let vendedorNome = 'Henrique Alves'; // Fallback padrão
 
-    if (!instanciaStr.toLowerCase().includes('admin-965')) {
-      // Se for OUTRA instância que não a sua, ele usa o nome dela
-      vendedorNome = instanciaStr;
-      if (typeof instanciaRaw === 'object' && instanciaRaw.pushName) vendedorNome = instanciaRaw.pushName;
-      if (fromMe && body.data?.pushName) vendedorNome = body.data.pushName;
+    // 1. Tenta pegar do objeto 'instance' (comum na v2)
+    if (typeof body.instance === 'object') {
+      vendedorNome = body.instance.profileName || body.instance.pushName || body.instance.name || vendedorNome;
+    } 
+    // 2. Tenta pegar se fromMe for true (o pushName da mensagem é o seu nome)
+    else if (fromMe && body.data?.pushName) {
+      vendedorNome = body.data.pushName;
+    }
+    // 3. Se for string e contiver Admin-965, mantemos Henrique Alves
+    else if (typeof body.instance === 'string' && body.instance.includes('Admin-965')) {
+      vendedorNome = 'Henrique Alves';
     }
 
     const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId);
