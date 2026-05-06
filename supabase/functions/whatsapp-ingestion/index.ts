@@ -5,6 +5,34 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const N8N_WEBHOOK_URL = 'https://salesforceai.app.n8n.cloud/webhook/ia-trigger' 
 
+function pickFirstString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return null
+}
+
+function extractSellerName(body: any, fromMe: boolean) {
+  const instance = typeof body?.instance === 'object' ? body.instance : null
+  const nestedInstance = typeof instance?.instance === 'object' ? instance.instance : null
+  const dataInstance = typeof body?.data?.instance === 'object' ? body.data.instance : null
+
+  return pickFirstString(
+    instance?.profileName,
+    nestedInstance?.profileName,
+    dataInstance?.profileName,
+    instance?.pushName,
+    nestedInstance?.pushName,
+    body?.sender?.profileName,
+    fromMe ? body?.data?.pushName : null,
+    instance?.name,
+    instance?.instanceName,
+    nestedInstance?.name,
+    nestedInstance?.instanceName,
+    typeof body?.instance === 'string' ? body.instance : null,
+  ) || 'Vendedor não identificado'
+}
+
 serve(async (req) => {
   try {
     const body = await req.json()
@@ -18,26 +46,10 @@ serve(async (req) => {
     if (!message) return new Response(JSON.stringify({ status: 'no_message' }), { status: 200 })
 
     const fromMe = body.data?.key?.fromMe || false
-    const remoteJid = body.data?.key?.remoteJid || '';
-    const clienteId = remoteJid.split('@')[0] || 'Desconhecido';
-    
-    // Tenta extrair o nome sincronizado da conta em todas as profundidades possíveis da Evolution v2
-    let vendedorNome = 'Henrique Alves'; // Fallback padrão
-
-    // 1. Tenta pegar do objeto 'instance' (comum na v2)
-    if (typeof body.instance === 'object') {
-      vendedorNome = body.instance.profileName || body.instance.pushName || body.instance.name || vendedorNome;
-    } 
-    // 2. Tenta pegar se fromMe for true (o pushName da mensagem é o seu nome)
-    else if (fromMe && body.data?.pushName) {
-      vendedorNome = body.data.pushName;
-    }
-    // 3. Se for string e contiver Admin-965, mantemos Henrique Alves
-    else if (typeof body.instance === 'string' && body.instance.includes('Admin-965')) {
-      vendedorNome = 'Henrique Alves';
-    }
-
-    const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId);
+    const remoteJid = body.data?.key?.remoteJid || ''
+    const clienteId = remoteJid.split('@')[0] || 'Desconhecido'
+    const vendedorNome = extractSellerName(body, fromMe)
+    const clienteNome = fromMe ? clienteId : (body.data?.pushName || clienteId)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
