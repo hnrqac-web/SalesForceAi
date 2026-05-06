@@ -56,6 +56,39 @@ function normalizeClientName(value: string | null | undefined) {
   return raw.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
+function looksLikeClientIdentifier(value: string | null | undefined) {
+  const normalized = normalizeClientName(value)
+  if (!normalized) return true
+  return /^[\d@+\-().\s]+$/.test(normalized)
+}
+
+function isSellerLikeClientName(value: string | null | undefined, vendedorIdentity: SellerIdentity) {
+  const normalized = normalizeClientName(value)
+  if (!normalized) return false
+
+  return vendedorIdentity.aliases.some((alias) => {
+    const normalizedAlias = normalizeClientName(alias)
+    return !!normalizedAlias && normalizedAlias === normalized
+  })
+}
+
+function resolveClientName(
+  providedName: string | null | undefined,
+  fallbackJid: string,
+  vendedorIdentity: SellerIdentity,
+  existingClientName?: string | null
+) {
+  if (existingClientName && !looksLikeClientIdentifier(existingClientName) && !isSellerLikeClientName(existingClientName, vendedorIdentity)) {
+    return existingClientName
+  }
+
+  if (providedName && !looksLikeClientIdentifier(providedName) && !isSellerLikeClientName(providedName, vendedorIdentity)) {
+    return providedName
+  }
+
+  return fallbackJid
+}
+
 function pickFirstBoolean(...values: unknown[]) {
   for (const value of values) {
     if (typeof value === 'boolean') return value
@@ -218,7 +251,7 @@ async function upsertAuditoria(
   const nextTranscript = currentTranscript ? `${currentTranscript}\n${transcriptLine}` : transcriptLine
 
   const payload: Record<string, unknown> = {
-    cliente_name: clienteName || cleanJid,
+    cliente_name: resolveClientName(clienteName, cleanJid, vendedorIdentity, existing?.cliente_name),
     vendedor_name: vendedorIdentity.primaryName,
     transcript: nextTranscript,
     ai_score: 0,
@@ -330,7 +363,10 @@ serve(async (req) => {
     const vendedorNome = vendedorIdentity.primaryName
     
     // Se for o vendedor iniciando, não teremos o pushName do cliente no webhook
-    const clienteNome = pickFirstString(data?.pushName, data?.pushname, body?.pushName, body?.pushname) || clienteId
+    const rawClientName = fromMe
+      ? null
+      : pickFirstString(data?.pushName, data?.pushname, body?.pushName, body?.pushname)
+    const clienteNome = rawClientName || clienteId
     const transcriptLine = buildTranscriptLine(message || (fromMe ? 'Mensagem enviada pelo vendedor' : 'Mensagem recebida'), fromMe)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
