@@ -81,13 +81,23 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
     
     setIsSyncing(true)
     try {
-      // 1. Tenta Descoberta Automática se o JID estiver faltando
+      // 1. Localiza a Instância Correta (pode ser pelo nome ou pelo número do vendedor)
+      toast.info('Localizando instância do vendedor...')
+      const instanceName = await evolutionService.findInstanceByName(auditoria.vendedor_name)
+      
+      if (!instanceName) {
+        throw new Error(`Não foi possível encontrar uma instância conectada para o vendedor "${auditoria.vendedor_name}". Verifique se o WhatsApp dele está pareado.`)
+      }
+
+      let jid = auditoria.cliente_jid
+      
+      // 2. Tenta Descoberta Automática do Cliente se o JID estiver faltando
       if (!jid) {
         toast.info('Buscando número do cliente no WhatsApp...')
-        const discoveredJid = await evolutionService.findJidByName(auditoria.vendedor_name, auditoria.cliente_name)
+        const discoveredJid = await evolutionService.findJidByName(instanceName, auditoria.cliente_name)
         if (discoveredJid) {
           jid = discoveredJid
-          toast.success('Número localizado!')
+          toast.success('Número do cliente localizado!')
         }
       }
 
@@ -114,9 +124,9 @@ export function AuditDetailSheet({ auditoria, onClose }: Props) {
       // Garante que o JID tenha o formato correto para a API
       const cleanJid = jid.includes('@') ? jid : `${jid.split('@')[0]}@s.whatsapp.net`
 
-      // 2. Busca histórico da Evolution API
+      // 3. Busca histórico da Evolution API
       const response = await evolutionService.fetchMessages(
-        auditoria.vendedor_name, 
+        instanceName, 
         cleanJid,
         50
       )

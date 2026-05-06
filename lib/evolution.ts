@@ -152,6 +152,54 @@ export const evolutionService = {
     }
   },
   /**
+   * Busca todas as instâncias disponíveis
+   */
+  async fetchInstances() {
+    try {
+      const response = await fetch('/api/evolution?endpoint=/instance/fetchInstances', {
+        method: 'GET',
+      });
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar instâncias:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Tenta encontrar a instância correta pelo nome, número ou status
+   */
+  async findInstanceByName(nameOrNumber: string) {
+    try {
+      const instances = await this.fetchInstances();
+      if (!Array.isArray(instances)) return null;
+
+      const cleanTarget = nameOrNumber.replace(/\D/g, '');
+
+      // 1. Tenta encontrar por número (owner) primeiro se for um número
+      if (cleanTarget.length > 8) {
+        const byOwner = instances.find((inst: any) => 
+          inst.owner?.includes(cleanTarget) && inst.status === 'open'
+        );
+        if (byOwner) return byOwner.instanceName;
+      }
+
+      // 2. Tenta encontrar pelo nome da instância
+      const byName = instances.find((inst: any) => 
+        (inst.instanceName?.toLowerCase().includes(nameOrNumber.toLowerCase()) || 
+         nameOrNumber.toLowerCase().includes(inst.instanceName?.toLowerCase())) &&
+        inst.status === 'open'
+      );
+
+      return byName?.instanceName || null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  /**
    * Busca mensagens de um chat (histórico)
    */
   async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
