@@ -7,6 +7,11 @@ type SchemaSupport = {
   hasStatus: boolean
 }
 
+type SellerIdentity = {
+  primaryName: string
+  aliases: string[]
+}
+
 async function parseResponse(response: Response) {
   const contentType = response.headers.get('content-type') || ''
 
@@ -31,6 +36,26 @@ function normalizeInstancesResponse(data: any) {
 function normalizeCollection(data: any) {
   if (Array.isArray(data)) return data
   return data?.messages || data?.data || data?.response || data?.response?.data || []
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+  return [...new Set(values.filter((value): value is string => !!value))]
+}
+
+function normalizeDigits(value: string | null | undefined) {
+  if (!value) return null
+  const digits = value.replace(/\D/g, '')
+  return digits || null
+}
+
+function buildSellerIdentity(inst: any): SellerIdentity {
+  const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name
+  const owner = inst.owner || inst.instance?.owner || inst.data?.owner || inst.connection?.owner || inst.instance?.data?.owner
+  const sellerNumber = typeof owner === 'string' ? normalizeDigits(owner) : null
+  return {
+    primaryName: sellerNumber || name,
+    aliases: uniqueStrings([sellerNumber, name]),
+  }
 }
 
 function extractMessageText(message: any) {
@@ -121,21 +146,28 @@ function formatTranscript(messages: any[]) {
 async function upsertAuditoria(
   supabase: any,
   schemaSupport: SchemaSupport,
-  vendedorName: string,
+  vendedorIdentity: SellerIdentity,
   clienteName: string,
   clienteJid: string,
   transcript: string
 ) {
-  const selectColumns = ['id', 'cliente_name', 'transcript']
+  const selectColumns = ['id', 'cliente_name', 'transcript', 'vendedor_name']
   if (schemaSupport.hasClienteJid) selectColumns.push('cliente_jid')
   if (schemaSupport.hasStatus) selectColumns.push('status')
 
-  const { data: existingRows, error: selectError } = await supabase
+  let query = supabase
     .from('auditorias')
     .select(selectColumns.join(','))
-    .eq('vendedor_name', vendedorName)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(100)
+
+  if (vendedorIdentity.aliases.length > 0) {
+    query = query.in('vendedor_name', vendedorIdentity.aliases)
+  } else {
+    query = query.eq('vendedor_name', vendedorIdentity.primaryName)
+  }
+
+  const { data: existingRows, error: selectError } = await query
 
   if (selectError) throw selectError
 
@@ -144,12 +176,13 @@ async function upsertAuditoria(
     const jidMatches = schemaSupport.hasClienteJid && row.cliente_jid && [row.cliente_jid, `${row.cliente_jid}@s.whatsapp.net`].includes(clienteJid)
     const nameMatches = row.cliente_name === clienteName
     const statusMatches = !schemaSupport.hasStatus || !row.status || row.status === 'aberto'
-    return statusMatches && (jidMatches || nameMatches)
+    const vendedorMatches = vendedorIdentity.aliases.length === 0 || vendedorIdentity.aliases.includes(row.vendedor_name)
+    return vendedorMatches && statusMatches && (jidMatches || nameMatches)
   })
 
   const payload: Record<string, any> = {
     cliente_name: clienteName || cleanJid,
-    vendedor_name: vendedorName,
+    vendedor_name: vendedorIdentity.primaryName,
     transcript,
     ai_score: 0,
     ai_summary: 'Conversa sincronizada do WhatsApp. Aguardando análise.',
@@ -250,18 +283,11 @@ export async function POST(req: NextRequest) {
     for (const inst of instances) {
       const name = inst.instanceName || inst.name || inst.instance?.instanceName || inst.instance?.name
       const status = inst.status || inst.connectionStatus || inst.instance?.status
+      const vendedorIdentity = buildSellerIdentity(inst)
       
       console.log(`[Sync] Processando instância: ${name}, Status: ${status}`)
       
       if (!name) continue;
-
-      const owner = inst.owner || 
-                    inst.instance?.owner || 
-                    inst.data?.owner || 
-                    inst.connection?.owner || 
-                    inst.instance?.data?.owner
-
-      const vendedorId = owner ? (typeof owner === 'string' ? owner.split('@')[0].replace(/\D/g, '') : owner) : name
 
       // 2. Tenta buscar CHATS
       console.log(`[Sync] Buscando chats para ${name}...`)
@@ -318,7 +344,7 @@ export async function POST(req: NextRequest) {
           await upsertAuditoria(
             supabase,
             schemaSupport,
-            String(vendedorId),
+            vendedorIdentity,
             clienteNome,
             jid,
             transcript

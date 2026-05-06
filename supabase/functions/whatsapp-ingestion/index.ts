@@ -12,11 +12,36 @@ type SchemaSupport = {
   hasLastAiTrigger: boolean
 }
 
+type SellerIdentity = {
+  primaryName: string
+  aliases: string[]
+  sellerJid: string | null
+}
+
 function pickFirstString(...values: unknown[]) {
   for (const value of values) {
     if (typeof value === 'string' && value.trim()) return value.trim()
   }
   return null
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+  return [...new Set(values.filter((value): value is string => !!value))]
+}
+
+function normalizeDigits(value: string | null | undefined) {
+  if (!value) return null
+  const digits = value.replace(/\D/g, '')
+  return digits || null
+}
+
+function normalizeJid(value: string | null | undefined) {
+  const raw = pickFirstString(value)
+  if (!raw) return null
+  if (raw.includes('@')) return raw
+
+  const digits = normalizeDigits(raw)
+  return digits ? `${digits}@s.whatsapp.net` : raw
 }
 
 function pickFirstBoolean(...values: unknown[]) {
@@ -50,15 +75,60 @@ function extractMessageText(body: any) {
   )
 }
 
-function extractRemoteJid(body: any) {
-  return pickFirstString(
-    body?.data?.key?.remoteJid,
-    body?.data?.remoteJid,
-    body?.data?.jid,
-    body?.key?.remoteJid,
-    body?.remoteJid,
-    body?.jid
-  ) || ''
+function extractSellerIdentity(body: any): SellerIdentity {
+  const instance = body?.instance
+  const owner = pickFirstString(
+    body?.data?.instance?.owner,
+    body?.instance?.owner,
+    body?.instance?.instance?.owner,
+    body?.senderJid,
+    body?.sender?.jid
+  )
+  const instanceName = pickFirstString(
+    typeof instance === 'string' ? instance : null,
+    instance?.name,
+    instance?.instanceName,
+    body?.data?.instance?.name,
+    body?.data?.instance?.instanceName,
+    body?.instanceName
+  )
+  const sellerJid = normalizeJid(owner)
+  const sellerNumber = normalizeDigits(owner)
+  const aliases = uniqueStrings([sellerNumber, sellerJid, instanceName])
+
+  return {
+    primaryName: sellerNumber || instanceName || 'Vendedor não identificado',
+    aliases,
+    sellerJid,
+  }
+}
+
+function extractRemoteJid(body: any, fromMe: boolean, sellerJid: string | null) {
+  const candidates = uniqueStrings([
+    normalizeJid(body?.data?.key?.remoteJid),
+    normalizeJid(body?.data?.remoteJid),
+    normalizeJid(body?.data?.jid),
+    normalizeJid(body?.data?.to),
+    normalizeJid(body?.data?.recipient),
+    normalizeJid(body?.data?.number),
+    normalizeJid(body?.data?.phone),
+    normalizeJid(body?.data?.chatId),
+    normalizeJid(body?.key?.remoteJid),
+    normalizeJid(body?.remoteJid),
+    normalizeJid(body?.jid),
+    normalizeJid(body?.to),
+    normalizeJid(body?.recipient),
+    normalizeJid(body?.number),
+    normalizeJid(body?.phone),
+    normalizeJid(body?.chatId),
+    normalizeJid(body?.destination),
+  ])
+
+  if (!fromMe || !sellerJid) {
+    return candidates[0] || ''
+  }
+
+  return candidates.find((candidate) => candidate !== sellerJid) || candidates[0] || ''
 }
 
 function extractFromMe(body: any, eventName: string) {
@@ -93,23 +163,30 @@ async function detectSchemaSupport(supabase: any): Promise<SchemaSupport> {
 async function upsertAuditoria(
   supabase: any,
   schemaSupport: SchemaSupport,
-  vendedorName: string,
+  vendedorIdentity: SellerIdentity,
   clienteName: string,
   clienteJid: string,
   transcriptLine: string
 ) {
-  const selectColumns = ['id', 'cliente_name', 'transcript']
+  const selectColumns = ['id', 'cliente_name', 'transcript', 'vendedor_name']
   if (schemaSupport.hasClienteJid) selectColumns.push('cliente_jid')
   if (schemaSupport.hasStatus) selectColumns.push('status')
   if (schemaSupport.hasTranscriptCompleto) selectColumns.push('transcript_completo')
   if (schemaSupport.hasLastAiTrigger) selectColumns.push('last_ai_trigger')
 
-  const { data: existingRows, error: selectError } = await supabase
+  let query = supabase
     .from('auditorias')
     .select(selectColumns.join(','))
-    .eq('vendedor_name', vendedorName)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(100)
+
+  if (vendedorIdentity.aliases.length > 0) {
+    query = query.in('vendedor_name', vendedorIdentity.aliases)
+  } else {
+    query = query.eq('vendedor_name', vendedorIdentity.primaryName)
+  }
+
+  const { data: existingRows, error: selectError } = await query
 
   if (selectError) throw selectError
 
@@ -118,7 +195,8 @@ async function upsertAuditoria(
     const jidMatches = schemaSupport.hasClienteJid && row.cliente_jid && [row.cliente_jid, `${row.cliente_jid}@s.whatsapp.net`].includes(clienteJid)
     const nameMatches = row.cliente_name === clienteName
     const statusMatches = !schemaSupport.hasStatus || !row.status || row.status === 'aberto'
-    return statusMatches && (jidMatches || nameMatches)
+    const vendedorMatches = vendedorIdentity.aliases.length === 0 || vendedorIdentity.aliases.includes(row.vendedor_name)
+    return vendedorMatches && statusMatches && (jidMatches || nameMatches)
   })
 
   const currentTranscript = existing?.transcript || ''
@@ -126,7 +204,7 @@ async function upsertAuditoria(
 
   const payload: Record<string, unknown> = {
     cliente_name: clienteName || cleanJid,
-    vendedor_name: vendedorName,
+    vendedor_name: vendedorIdentity.primaryName,
     transcript: nextTranscript,
     ai_score: 0,
     ai_summary: 'Conversa capturada do WhatsApp. Aguardando análise.',
@@ -201,16 +279,7 @@ async function maybeTriggerAi(supabase: any, schemaSupport: SchemaSupport, audit
 }
 
 function extractSellerName(body: any) {
-  const instance = body?.instance
-  // Tenta pegar o número do dono da instância (owner) se disponível no body da Evolution API
-  // Caso contrário, usa o nome da instância
-  const owner = body?.data?.instance?.owner || body?.instance?.owner
-  const instanceName = typeof instance === 'string' ? instance : (instance?.name || instance?.instanceName)
-  
-  // Prioriza o número do dono (owner), removendo caracteres não numéricos
-  if (owner) return owner.split('@')[0].replace(/\D/g, '')
-  
-  return instanceName || 'Vendedor não identificado'
+  return extractSellerIdentity(body).primaryName
 }
 
 serve(async (req) => {
@@ -232,7 +301,8 @@ serve(async (req) => {
     }
 
     const fromMe = extractFromMe(body, eventName)
-    const remoteJid = extractRemoteJid(body)
+    const vendedorIdentity = extractSellerIdentity(body)
+    const remoteJid = extractRemoteJid(body, fromMe, vendedorIdentity.sellerJid)
 
     console.log(`[Webhook] Evento: ${eventName}, de: ${remoteJid}, fromMe: ${fromMe}`)
     
@@ -242,7 +312,7 @@ serve(async (req) => {
     }
 
     const clienteId = remoteJid.split('@')[0] || 'Desconhecido'
-    const vendedorNome = extractSellerName(body)
+    const vendedorNome = vendedorIdentity.primaryName
     
     // Se for o vendedor iniciando, não teremos o pushName do cliente no webhook
     const clienteNome = pickFirstString(data?.pushName, data?.pushname, body?.pushName, body?.pushname) || clienteId
@@ -254,7 +324,7 @@ serve(async (req) => {
     const { auditoriaId, lastAiTrigger } = await upsertAuditoria(
       supabase,
       schemaSupport,
-      vendedorNome,
+      vendedorIdentity,
       clienteNome,
       remoteJid,
       transcriptLine
