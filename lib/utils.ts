@@ -73,12 +73,20 @@ export function extractTranscriptLines(
   const normalizedVendedor = vendedorName ? normalizeSpeakerLabel(vendedorName) : null
   const normalizedCliente = clienteName ? normalizeSpeakerLabel(clienteName) : null
 
-  return lines.map((line) => {
+  const parsed: { from: 'v' | 'c'; msg: string }[] = []
+
+  for (const line of lines) {
     const trimmedLine = line.trim()
     const labelMatch = trimmedLine.match(/^([^:]+):\s*(.*)$/)
 
     if (!labelMatch) {
-      return { from: 'c' as const, msg: trimmedLine }
+      const previous = parsed[parsed.length - 1]
+      if (previous) {
+        previous.msg = `${previous.msg}\n${trimmedLine}`
+      } else {
+        parsed.push({ from: 'c' as const, msg: trimmedLine })
+      }
+      continue
     }
 
     const [, rawLabel, rawMessage] = labelMatch
@@ -89,18 +97,22 @@ export function extractTranscriptLines(
       normalizedLabel === 'vendedor' ||
       (normalizedVendedor && normalizedLabel === normalizedVendedor)
     ) {
-      return { from: 'v' as const, msg }
+      parsed.push({ from: 'v' as const, msg })
+      continue
     }
 
     if (
       normalizedLabel === 'cliente' ||
       (normalizedCliente && normalizedLabel === normalizedCliente)
     ) {
-      return { from: 'c' as const, msg }
+      parsed.push({ from: 'c' as const, msg })
+      continue
     }
 
-    return { from: 'c' as const, msg }
-  })
+    parsed.push({ from: 'c' as const, msg })
+  }
+
+  return parsed
 }
 
 export function getAverageScore(auditorias: Auditoria[]): number {

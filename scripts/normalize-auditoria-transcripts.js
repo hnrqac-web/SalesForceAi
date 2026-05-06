@@ -26,32 +26,44 @@ function rewriteTranscript(transcript, vendedorName, clienteName) {
   const normalizedVendedor = normalizeSpeakerLabel(vendedorName)
   const normalizedCliente = normalizeSpeakerLabel(clienteName)
 
-  return String(transcript || '')
-    .split('\n')
-    .filter((line) => line.trim())
-    .map((line) => {
-      const trimmedLine = line.trim()
-      const labelMatch = trimmedLine.match(/^([^:]+):\s*(.*)$/)
+  const blocks = []
+  let current = null
 
-      if (!labelMatch) {
-        return trimmedLine
+  for (const line of String(transcript || '').split('\n').filter((value) => value.trim())) {
+    const trimmedLine = line.trim()
+    const labelMatch = trimmedLine.match(/^([^:]+):\s*(.*)$/)
+
+    if (!labelMatch) {
+      if (current) {
+        current.msg = `${current.msg}\n${trimmedLine}`
+      } else {
+        current = { speaker: 'Cliente', msg: trimmedLine }
+        blocks.push(current)
       }
+      continue
+    }
 
-      const [, rawLabel, rawMessage] = labelMatch
-      const normalizedLabel = normalizeSpeakerLabel(rawLabel)
-      const msg = rawMessage.trim()
+    const [, rawLabel, rawMessage] = labelMatch
+    const normalizedLabel = normalizeSpeakerLabel(rawLabel)
+    const msg = rawMessage.trim()
 
-      if (normalizedLabel === 'vendedor' || normalizedLabel === normalizedVendedor) {
-        return `Vendedor: ${msg}`
-      }
+    if (normalizedLabel === 'vendedor' || normalizedLabel === normalizedVendedor) {
+      current = { speaker: 'Vendedor', msg }
+      blocks.push(current)
+      continue
+    }
 
-      if (normalizedLabel === 'cliente' || normalizedLabel === normalizedCliente) {
-        return `Cliente: ${msg}`
-      }
+    if (normalizedLabel === 'cliente' || normalizedLabel === normalizedCliente) {
+      current = { speaker: 'Cliente', msg }
+      blocks.push(current)
+      continue
+    }
 
-      return `Cliente: ${msg}`
-    })
-    .join('\n')
+    current = { speaker: 'Cliente', msg }
+    blocks.push(current)
+  }
+
+  return blocks.map((block) => `${block.speaker}: ${block.msg}`).join('\n')
 }
 
 async function columnExists(supabase, column) {
