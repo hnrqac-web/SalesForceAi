@@ -26,7 +26,7 @@ function normalizeInstance(rawInstance: any) {
 function normalizeInstancesResponse(data: any) {
   const list = Array.isArray(data)
     ? data
-    : data?.instances || data?.response?.message || []
+    : data?.instances || data?.data || data?.response?.message || data?.response || []
 
   return Array.isArray(list) ? list.map(normalizeInstance) : []
 }
