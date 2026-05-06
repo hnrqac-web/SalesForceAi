@@ -156,8 +156,8 @@ export const evolutionService = {
    */
   async fetchMessages(instanceName: string, remoteJid: string, count: number = 20) {
     try {
-      const endpoint = encodeURIComponent(`/chat/fetchMessages/${instanceName}?number=${remoteJid}&count=${count}`);
-      const response = await fetch(`/api/evolution?endpoint=${endpoint}`, {
+      // O proxy agora é inteligente e repassa todos os parâmetros automaticamente
+      const response = await fetch(`/api/evolution?endpoint=/chat/fetchMessages/${instanceName}&number=${remoteJid}&count=${count}`, {
         method: 'GET',
       });
       const data = await response.json();

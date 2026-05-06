@@ -71,8 +71,16 @@ export async function GET(request: NextRequest) {
   const baseUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   
+  // Constrói a URL final incluindo todos os outros parâmetros de busca
+  const url = new URL(`${baseUrl}${cleanEndpoint}`);
+  searchParams.forEach((value, key) => {
+    if (key !== 'endpoint') {
+      url.searchParams.set(key, value);
+    }
+  });
+
   try {
-    const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
     });
